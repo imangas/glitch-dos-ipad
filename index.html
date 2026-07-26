@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mi Gestor de ROMs Local</title>
+
+  <!-- Indicar a iOS que se comporte como una Web App -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mi App iPad">
+
+  <!-- Icono que se verá en la pantalla de inicio del iPad -->
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Manifest básico -->
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+  <h1>Biblioteca de juegos (OPFS)</h1>
+
+  <!-- Selector para subir nuevos juegos -->
+  <input type="file" id="rom-input" accept=".zip" />
+  
+  <h3>ROMs Guardadas en el iPad:</h3>
+  <ul id="lista-roms"></ul>
+
+  <script>
+    const inputFile = document.getElementById('rom-input');
+    const listaUl = document.getElementById('lista-roms');
+
+    // 1. Guardar la ROM elegida en OPFS
+    inputFile.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Obtener el directorio privado raíz del navegador
+      const root = await navigator.storage.getDirectory();
+      
+      // Crear archivo dentro de OPFS
+      const fileHandle = await root.getFileHandle(file.name, { create: true });
+      const writable = await fileHandle.createWritable();
+      
+      // Escribir los datos del ZIP
+      await writable.write(await file.arrayBuffer());
+      await writable.close();
+
+      alert(`¡${file.name} guardado con éxito!`);
+      actualizarLista();
+    });
+
+    // 2. Cargar y listar los juegos almacenados
+    async function actualizarLista() {
+      listaUl.innerHTML = '';
+      const root = await navigator.storage.getDirectory();
+
+      for await (const [name, handle] of root.entries()) {
+        if (handle.kind === 'file') {
+          const li = document.createElement('li');
+          
+          // Crear un botón para "Jugar" (Cargar el buffer)
+          const btn = document.createElement('button');
+          btn.textContent = `Cargar ${name}`;
+          btn.onclick = () => cargarJuego(handle);
+
+          li.appendChild(btn);
+          listaUl.appendChild(li);
+        }
+      }
+    }
+
+    // 3. Leer el archivo binario guardado para pasárselo a js-dos
+    async function cargarJuego(fileHandle) {
+      const file = await fileHandle.getFile();
+      const buffer = await file.arrayBuffer();
+      
+      console.log("Buffer listo para pasar a js-dos:", buffer);
+      // Aquí harías: Dos(canvas).run(buffer);
+    }
+
+    // Inicializar lista al abrir la página
+    actualizarLista();
+  </script>
+</body>
+</html>
