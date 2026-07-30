@@ -1,85 +1,183 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Mi Gestor de ROMs Local</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mi Gestor de ROMs Local</title>
 
-  <!-- Indicar a iOS que se comporte como una Web App -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Mi App iPad">
+    <!-- Indicar a iOS que se comporte como una Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Mi App iPad" />
 
-  <!-- Icono que se verá en la pantalla de inicio del iPad -->
-  <link rel="apple-touch-icon" href="icon-192.png">
+    <!-- Icono para la pantalla de inicio -->
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <link rel="manifest" href="manifest.json" />
 
-  <!-- Manifest básico -->
-  <link rel="manifest" href="manifest.json">
-</head>
-<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-  <h1>Biblioteca de juegos (OPFS)</h1>
+    <!-- js-dos v8 style & script -->
+    <link rel="stylesheet" href="https://v8.js-dos.com/latest/js-dos.css" />
+    <script src="https://v8.js-dos.com/latest/js-dos.js"></script>
+  </head>
+  <body>
+    <h1>Biblioteca de juegos (OPFS)</h1>
 
-  <!-- Selector para subir nuevos juegos -->
-  <input type="file" id="rom-input" accept=".zip" />
-  
-  <h3>ROMs Guardadas en el iPad:</h3>
-  <ul id="lista-roms"></ul>
+    <input type="file" id="rom-input" accept=".zip" />
 
-  <script>
-    const inputFile = document.getElementById('rom-input');
-    const listaUl = document.getElementById('lista-roms');
+    <h3>ROMs Guardadas en el iPad:</h3>
+    <ul id="lista-roms"></ul>
 
-    // 1. Guardar la ROM elegida en OPFS
-    inputFile.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    <div id="dos" style="width: 100vw; height: 60vw"></div>
 
-      // Obtener el directorio privado raíz del navegador
-      const root = await navigator.storage.getDirectory();
-      
-      // Crear archivo dentro de OPFS
-      const fileHandle = await root.getFileHandle(file.name, { create: true });
-      const writable = await fileHandle.createWritable();
-      
-      // Escribir los datos del ZIP
-      await writable.write(await file.arrayBuffer());
-      await writable.close();
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .then((reg) => console.log("Service Worker registrado con éxito"))
+            .catch((err) =>
+              console.error("Error al registrar Service Worker:", err),
+            );
+        });
+      }
 
-      alert(`¡${file.name} guardado con éxito!`);
-      actualizarLista();
-    });
+      const inputFile = document.getElementById("rom-input");
+      const listaUl = document.getElementById("lista-roms");
 
-    // 2. Cargar y listar los juegos almacenados
-    async function actualizarLista() {
-      listaUl.innerHTML = '';
-      const root = await navigator.storage.getDirectory();
+      // 1. Guardar la ROM tal cual en OPFS (Sin necesidad de manipular el ZIP)
+      inputFile.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-      for await (const [name, handle] of root.entries()) {
-        if (handle.kind === 'file') {
-          const li = document.createElement('li');
-          
-          // Crear un botón para "Jugar" (Cargar el buffer)
-          const btn = document.createElement('button');
-          btn.textContent = `Cargar ${name}`;
-          btn.onclick = () => cargarJuego(handle);
+        try {
+          const root = await navigator.storage.getDirectory();
+          const fileHandle = await root.getFileHandle(file.name, {
+            create: true,
+          });
+          const writable = await fileHandle.createWritable();
 
-          li.appendChild(btn);
-          listaUl.appendChild(li);
+          await writable.write(await file.arrayBuffer());
+          await writable.close();
+
+          alert(`¡${file.name} guardado con éxito!`);
+          inputFile.value = "";
+          actualizarLista();
+        } catch (err) {
+          console.error("Error al guardar en OPFS:", err);
+          alert("Hubo un error al guardar la ROM.");
+        }
+      });
+
+      // 2. Listar juegos
+      async function actualizarLista() {
+        listaUl.innerHTML = "";
+        const root = await navigator.storage.getDirectory();
+
+        for await (const [name, handle] of root.entries()) {
+          if (handle.kind === "file" && name.endsWith(".zip")) {
+            const li = document.createElement("li");
+            li.style.marginBottom = "8px";
+
+            const btnCargar = document.createElement("button");
+            btnCargar.textContent = `Cargar ${name}`;
+            btnCargar.onclick = () => cargarJuegoBlob(handle);
+
+            const btnBorrar = document.createElement("button");
+            btnBorrar.textContent = "🗑️ Borrar";
+            btnBorrar.style.marginLeft = "10px";
+            btnBorrar.onclick = () => borrarJuego(name);
+
+            li.appendChild(btnCargar);
+            li.appendChild(btnBorrar);
+            listaUl.appendChild(li);
+          }
         }
       }
-    }
 
-    // 3. Leer el archivo binario guardado para pasárselo a js-dos
-    async function cargarJuego(fileHandle) {
-      const file = await fileHandle.getFile();
-      const buffer = await file.arrayBuffer();
-      
-      console.log("Buffer listo para pasar a js-dos:", buffer);
-      // Aquí harías: Dos(canvas).run(buffer);
-    }
+      // 3. Borrar de OPFS
+      async function borrarJuego(fileName) {
+        if (!confirm(`¿Seguro que quieres borrar "${fileName}" del iPad?`))
+          return;
 
-    // Inicializar lista al abrir la página
-    actualizarLista();
-  </script>
-</body>
+        try {
+          const root = await navigator.storage.getDirectory();
+          await root.removeEntry(fileName);
+
+          document.getElementById("dos").innerHTML = "";
+          actualizarLista();
+        } catch (err) {
+          console.error("Error al borrar el archivo:", err);
+          alert("No se pudo eliminar el juego.");
+        }
+      }
+
+      async function cargarJuegoBlob(fileHandle) {
+        const container = document.getElementById("dos");
+        container.innerHTML = ""; // Limpiar visor previo
+
+        try {
+          // 1. Obtener el archivo desde OPFS
+          const file = await fileHandle.getFile();
+          const arrayBuffer = await file.arrayBuffer();
+
+          // 2. Leer el ZIP original con JSZip en memoria RAM
+          const zip = await JSZip.loadAsync(arrayBuffer);
+
+          // 3. Crear o sobrescribir 'dosbox.conf' en la raíz del ZIP
+          const customConf = `[autoexec]
+mount c .
+c:
+SC2000.EXE
+`;
+
+          // Inyectar el archivo de configuración
+          zip.file(".jsdos/dosbox.conf", customConf);
+
+          // 4. Generar un nuevo Blob ZIP en memoria
+          const bundleBlob = await zip.generateAsync({
+            type: "blob",
+            mimeType: "application/zip",
+          });
+          const objectUrl = URL.createObjectURL(bundleBlob);
+
+          // 5. Iniciar js-dos v8 pasándole la URL del Blob generado
+          Dos(container, {
+            url: objectUrl,
+            autoStart: true,
+          });
+        } catch (err) {
+          console.error("Error al cargar el juego en js-dos v8:", err);
+          alert("No se pudo iniciar el emulador.");
+        }
+      }
+
+      // 4. Cargar en js-dos v8 enviando los comandos directamente al ciclo de vida del emulador
+      async function cargarJuego(fileHandle) {
+        const container = document.getElementById("dos");
+        container.innerHTML = ""; // Limpiar instancia previa
+
+        const file = await fileHandle.getFile();
+        const blob = new Blob([await file.arrayBuffer()], {
+          type: "application/zip",
+        });
+        const objectUrl = URL.createObjectURL(blob);
+
+        // Iniciar js-dos v8
+        Dos(container, {
+          url: objectUrl,
+          autoStart: true,
+          dosboxConf: `
+          [autoexec]
+          mount c .
+          c:
+        `,
+        });
+      }
+
+      actualizarLista();
+    </script>
+  </body>
 </html>
