@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="es">
+
+<html class="dark" lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Mi Gestor de ROMs Local</title>
+    <title>GlitchDOS</title>
 
     <!-- Indicar a iOS que se comporte como una Web App -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -10,7 +11,7 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="apple-mobile-web-app-title" content="Mi App iPad" />
+    <meta name="apple-mobile-web-app-title" content="GlitchDOS" />
 
     <!-- Icono para la pantalla de inicio -->
     <link rel="apple-touch-icon" href="icon-192.png" />
@@ -21,18 +22,22 @@
     <!-- js-dos v8 style & script -->
     <link rel="stylesheet" href="https://v8.js-dos.com/latest/js-dos.css" />
     <script src="https://v8.js-dos.com/latest/js-dos.js"></script>
-  </head>
-  <body>
-    <h1>Biblioteca de juegos (OPFS)</h1>
 
-    <input type="file" id="rom-input" accept=".zip" />
-
-    <h3>ROMs Guardadas en el iPad:</h3>
-    <ul id="lista-roms"></ul>
-
-    <div id="dos" style="width: 100vw; height: 60vw"></div>
-
-    <script>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
@@ -44,79 +49,407 @@
         });
       }
 
-      const inputFile = document.getElementById("rom-input");
-      const listaUl = document.getElementById("lista-roms");
-
-      // 1. Guardar la ROM tal cual en OPFS (Sin necesidad de manipular el ZIP)
-      inputFile.addEventListener("change", async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        try {
-          const root = await navigator.storage.getDirectory();
-          const fileHandle = await root.getFileHandle(file.name, {
-            create: true,
-          });
-          const writable = await fileHandle.createWritable();
-
-          await writable.write(await file.arrayBuffer());
-          await writable.close();
-
-          alert(`¡${file.name} guardado con éxito!`);
-          inputFile.value = "";
-          actualizarLista();
-        } catch (err) {
-          console.error("Error al guardar en OPFS:", err);
-          alert("Hubo un error al guardar la ROM.");
-        }
-      });
-
-      // 2. Listar juegos
-      async function actualizarLista() {
-        listaUl.innerHTML = "";
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#57d9d9",
+              "on-tertiary": "#502500",
+              "surface-tint": "#57d9d9",
+              "on-secondary-container": "#b8b8b8",
+              secondary: "#c7c6c6",
+              "on-secondary-fixed-variant": "#464747",
+              tertiary: "#ffb785",
+              "secondary-fixed-dim": "#c7c6c6",
+              error: "#ffb4ab",
+              background: "#131313",
+              "on-tertiary-container": "#502500",
+              "on-error-container": "#ffdad6",
+              "surface-container-low": "#1b1b1b",
+              "on-tertiary-fixed-variant": "#713700",
+              "outline-variant": "#3c4949",
+              "on-error": "#690005",
+              "error-container": "#93000a",
+              "tertiary-fixed-dim": "#ffb785",
+              "primary-container": "#00aaaa",
+              "inverse-on-surface": "#303030",
+              "surface-bright": "#393939",
+              "on-surface-variant": "#bbc9c8",
+              surface: "#131313",
+              "on-secondary": "#2f3131",
+              "surface-container-lowest": "#0e0e0e",
+              "surface-variant": "#353535",
+              "surface-container-highest": "#353535",
+              "on-primary-fixed-variant": "#004f4f",
+              "tertiary-fixed": "#ffdcc6",
+              "tertiary-container": "#e18032",
+              "secondary-container": "#484949",
+              "on-tertiary-fixed": "#301400",
+              "on-background": "#e2e2e2",
+              "on-surface": "#e2e2e2",
+              "inverse-surface": "#e2e2e2",
+              "on-primary-container": "#003737",
+              "secondary-fixed": "#e3e2e2",
+              "on-secondary-fixed": "#1a1c1c",
+              "on-primary": "#003737",
+              "primary-fixed-dim": "#57d9d9",
+              "surface-container": "#1f1f1f",
+              "on-primary-fixed": "#002020",
+              "surface-dim": "#131313",
+              outline: "#869393",
+              "surface-container-high": "#2a2a2a",
+              "inverse-primary": "#006a6a",
+              "primary-fixed": "#78f6f5",
+            },
+            fontFamily: {
+              headline: ["Space Grotesk"],
+              body: ["Space Grotesk"],
+              label: ["Space Grotesk"],
+            },
+            borderRadius: {
+              DEFAULT: "0px",
+              lg: "0px",
+              xl: "0px",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .ascii-border-b {
+        background-image: linear-gradient(
+          to right,
+          #3c4949 50%,
+          transparent 50%
+        );
+        background-size: 8px 1px;
+        background-repeat: repeat-x;
+        background-position: bottom;
+      }
+      .phosphor-glow {
+        text-shadow: 0 0 8px rgba(87, 217, 217, 0.4);
+      }
+      .recessed-panel {
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-background text-on-background font-body select-none overflow-hidden h-screen flex flex-col"
+  >
+    <!-- TopAppBar -->
+    <header
+      class="fixed top-0 w-full z-50 border-b border-[#3c4949]/50 bg-[#131313] shadow-[0_0_15px_rgba(87,217,217,0.05)] flex justify-between items-center px-4 h-12 w-full"
+    >
+      <div class="flex items-center gap-4">
+        <span class="text-lg font-bold text-[#57d9d9] font-['Space_Grotesk']"
+          >C:\SYSTEM\LAUNCHER.EXE</span
+        >
+        <div class="hidden md:flex gap-6 ml-8">
+          <button
+            class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#57d9d9] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
+          >
+            F1:HELP
+          </button>
+          <button
+            class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
+          >
+            F2:CONFIG
+          </button>
+          <button
+            class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
+          >
+            F10:EXIT
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-[#57d9d9] text-base"
+          >terminal</span
+        >
+        <span class="material-symbols-outlined text-[#c7c6c6] text-base"
+          >settings</span
+        >
+        <span class="material-symbols-outlined text-[#c7c6c6] text-base"
+          >power_settings_new</span
+        >
+      </div>
+    </header>
+    <div
+      id="game-panel"
+      class="flex flex-1 pt-12 pb-8 overflow-hidden"
+      style="width: 100vw; height: 60vw; display: none"
+    ></div>
+    <!-- Main Layout Container -->
+    <div id="dashboard-panel" class="flex flex-1 pt-12 pb-8 overflow-hidden">
+      <!-- SideNavBar -->
+      <aside
+        class="fixed left-0 top-12 bottom-8 w-64 z-40 border-r border-[#3c4949]/50 bg-[#1b1b1b] flex flex-col py-6"
+      >
+        <div class="px-4 mb-6">
+          <div
+            class="text-[#57d9d9] font-['Space_Grotesk'] font-bold text-xs uppercase opacity-60 mb-2"
+          >
+            &gt; DRIVES
+          </div>
+          <div class="space-y-1">
+            <div
+              class="bg-[#57d9d9] text-[#003737] font-bold px-4 py-3 flex items-center gap-3 active:scale-[0.99] cursor-pointer"
+            >
+              <span
+                class="material-symbols-outlined text-sm"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >grid_view</span
+              >
+              <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
+                >C: SYSTEM_DRIVE</span
+              >
+            </div>
+            <div
+              class="text-[#c7c6c6] px-4 py-3 flex items-center gap-3 hover:text-[#57d9d9] hover:bg-[#2a2a2a] transition-none cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-sm">storage</span>
+              <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
+                >A: FLOPPY_DISK</span
+              >
+            </div>
+            <div
+              class="text-[#c7c6c6] px-4 py-3 flex items-center gap-3 hover:text-[#57d9d9] hover:bg-[#2a2a2a] transition-none cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-sm">album</span>
+              <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
+                >D: CD-ROM_OS</span
+              >
+            </div>
+          </div>
+        </div>
+        <div class="px-4 mb-auto">
+          <div
+            class="text-[#57d9d9] font-['Space_Grotesk'] font-bold text-xs uppercase opacity-60 mb-2"
+          >
+            &gt; CATEGORIES
+          </div>
+          <div class="space-y-1">
+            <div
+              class="text-[#c7c6c6] px-4 py-3 flex items-center gap-3 hover:text-[#57d9d9] hover:bg-[#2a2a2a] transition-none cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-sm">star</span>
+              <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
+                >FAVORITES</span
+              >
+            </div>
+            <div
+              class="text-[#c7c6c6] px-4 py-3 flex items-center gap-3 hover:text-[#57d9d9] hover:bg-[#2a2a2a] transition-none cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-sm">history</span>
+              <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
+                >RECENT</span
+              >
+            </div>
+            <div
+              class="text-[#c7c6c6] px-4 py-3 flex items-center gap-3 hover:text-[#57d9d9] hover:bg-[#2a2a2a] transition-none cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-sm"
+                >construction</span
+              >
+              <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
+                >TOOLS</span
+              >
+            </div>
+          </div>
+        </div>
+        <div class="px-4 border-t border-[#3c4949]/30 pt-6">
+          <button
+            class="w-full bg-[#2a2a2a] text-[#57d9d9] border border-[#57d9d9]/30 py-3 font-bold text-xs uppercase tracking-widest hover:bg-[#57d9d9] hover:text-[#003737] transition-colors active:scale-95"
+          >
+            [+] MOUNT_DRIVE
+          </button>
+        </div>
+      </aside>
+      <!-- Central Content Canvas -->
+      <main
+        class="ml-64 mr-80 flex-1 p-6 overflow-y-auto custom-scrollbar bg-surface-container-lowest"
+      >
+        <div class="mb-8">
+          <p
+            class="text-secondary-fixed-dim font-label text-xs tracking-tighter mb-1"
+          >
+            C:\GAMES\ROOT\ &gt; 10-24-1994
+          </p>
+          <h1
+            class="text-3xl font-bold font-headline text-on-surface phosphor-glow uppercase tracking-tight"
+          >
+            EXECUTABLE_LIBRARY
+          </h1>
+        </div>
+        <!-- Game Grid -->
+        <div
+          id="game_grid"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        ></div>
+      </main>
+      <!-- Right Detail Panel -->
+      <aside
+        class="fixed right-0 top-12 bottom-8 w-80 z-40 bg-[#1b1b1b] border-l border-outline-variant/50 p-6 flex flex-col"
+      >
+        <div class="mb-6 flex flex-col gap-4">
+          <div class="border border-primary/40 p-1">
+            <div
+              class="bg-black aspect-video overflow-hidden border border-primary/20 relative"
+            >
+              <img
+                class="w-full h-full object-cover contrast-150"
+                data-alt="Detailed screenshot of Monkey Island game art"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEpT0dHBPGe6uQyZGf3uKs6S01RnwhsbMOeYQXh-oE1n6h2Kbg63VJbNle-kEkcq2kpAXlw00c4Ez_iBc9tMJeauDT4RC3qxRlfPkcJDT9Pl68OWF96Hk9X4vjd1BPWQXm6DeuvOsxDNy5H2FqzkJRxWCEt_Jpq25Jl1oqx3D5AT-IQUEpuQaQc6v5IEIy3izO8jP0CZ-xlouvgsgJGbUxriJlGeGrSRuZsDp1sgBNGFIHzrH2m-2pehzr3wRyvz6S8mLAKfyR82M"
+              />
+              <div
+                class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"
+              ></div>
+              <div class="absolute bottom-2 left-2 text-[8px] text-primary/70">
+                SCR_DMP_0041.PCX
+              </div>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <h2
+              class="text-xl font-bold text-primary phosphor-glow tracking-tight uppercase"
+            >
+              THE SECRET OF MONKEY ISLAND
+            </h2>
+            <div class="space-y-2 border-t border-outline-variant/30 pt-4">
+              <div class="flex justify-between text-[11px]">
+                <span class="text-secondary">SYSTEM_CPU:</span>
+                <span class="text-on-surface font-bold">i386_DX @ 33MHZ</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-secondary">REQUIRED_RAM:</span>
+                <span class="text-on-surface font-bold">640 KB BASE</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-secondary">VIDEO_MODE:</span>
+                <span class="text-on-surface font-bold">VGA 320x200x256</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-secondary">AUDIO_DRIVER:</span>
+                <span class="text-on-surface font-bold">SOUND_BLASTER_16</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="recessed-panel bg-surface-container-lowest p-4 mb-6 border-b border-r border-outline-variant/20"
+        >
+          <p
+            class="text-[10px] leading-relaxed text-secondary-fixed-dim line-clamp-6"
+          >
+            "THREEPWOOD! PREPARE TO FACE THE MIGHT OF LECHUCK! AN ADVENTURE OF
+            SWASHBUCKLING, INSULT SWORD FIGHTING, AND RUBBER CHICKENS WITH
+            PULLEYS IN THE MIDDLE."
+          </p>
+        </div>
+        <div class="mt-auto flex flex-col gap-3">
+          <button
+            class="w-full bg-[#57d9d9] text-[#003737] py-4 text-center font-extrabold text-lg tracking-[0.2em] shadow-[0_0_20px_rgba(87,217,217,0.2)] hover:brightness-110 active:scale-95 transition-all"
+          >
+            EXECUTE
+          </button>
+          <div class="flex gap-2">
+            <button
+              class="flex-1 bg-surface-container-high text-secondary py-2 text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30 hover:bg-surface-variant"
+            >
+              SETUP
+            </button>
+            <button
+              class="flex-1 bg-surface-container-high text-secondary py-2 text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30 hover:bg-surface-variant"
+            >
+              MANUAL
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <!-- Footer / Status Bar -->
+    <footer
+      class="fixed bottom-0 w-full h-8 bg-[#1b1b1b] border-t border-[#3c4949]/50 flex items-center justify-between px-4 z-50"
+    >
+      <div class="flex gap-6 items-center">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-secondary">CONVENTIONAL_MEM:</span>
+          <span class="text-[10px] text-primary font-bold"
+            >598 KB / 640 KB FREE</span
+          >
+        </div>
+        <div class="h-3 w-[1px] bg-outline-variant"></div>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-secondary">EXTENDED_MEM:</span>
+          <span class="text-[10px] text-primary font-bold">15,360 KB EMS</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-[10px] text-secondary">
+          <span class="material-symbols-outlined text-[12px]">schedule</span>
+          <span class="font-bold">21:34:58</span>
+        </div>
+        <div
+          class="bg-primary/20 px-2 py-0.5 text-[10px] text-primary font-bold uppercase"
+        >
+          SYSTEM_STABLE
+        </div>
+      </div>
+    </footer>
+    <script>
+      const gameGrid = document.getElementById("game_grid");
+      async function loadList() {
         const root = await navigator.storage.getDirectory();
 
         for await (const [name, handle] of root.entries()) {
-          if (handle.kind === "file" && name.endsWith(".zip")) {
-            const li = document.createElement("li");
-            li.style.marginBottom = "8px";
+          /*if (!name.match(".*\.zip")) {
+            continue;
+          }*/
+          const gameCard = document.createElement("div");
+          gameCard.className =
+            "group cursor-pointer bg-surface-container-low border border-outline-variant/20 hover:border-primary/50 transition-all p-3";
 
-            const btnCargar = document.createElement("button");
-            btnCargar.textContent = `Cargar ${name}`;
-            btnCargar.onclick = () => cargarJuegoBlob(handle);
+          gameCard.innerHTML = `<div class="relative bg-surface-container-high aspect-square mb-4 overflow-hidden border border-primary/20">
+              <img
+                class="w-full h-full object-cover grayscale contrast-125 brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-300"
+                data-alt="Retro 90s FPS game screenshot with dark corridors"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDc5EH-l_2Uvm_a2VMMeHXCc5WFgSy4f4RNcniGG45c0sRvjB15upLm261iRFYt_Qd3PCADpkcGCWhxKJvyRQnB9gKBs5gLpDlAFWdH7ggJtF83Ko5zHMrl8xIsUsY9xFu1LZ0OqSmyImaNqQoltAItstZXTdTqUNuSeKlno3Zlm27SYC7vEW3KLfzKuF5hMRNI3QqVmwNE4TxNCxEOnyUpCoYU-c1DT5ZsUgMZNlNSGstOtjlNlpw1BNvZFXO1vpbU0F1OMyvYWzg"
+              />
+            <div class="absolute inset-0 bg-primary/10 mix-blend-overlay"></div>
+          </div>
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-on-surface font-bold text-sm group-hover:text-primary">${name}
+              </h3>
+              <p class="text-secondary text-[10px] mt-1 uppercase">3DO</p>
+            </div>
+            <span class="text-primary font-bold text-[10px] tracking-widest">[INFO]</span>
+          </div>`;
 
-            const btnBorrar = document.createElement("button");
-            btnBorrar.textContent = "🗑️ Borrar";
-            btnBorrar.style.marginLeft = "10px";
-            btnBorrar.onclick = () => borrarJuego(name);
+          gameGrid.append(gameCard);
 
-            li.appendChild(btnCargar);
-            li.appendChild(btnBorrar);
-            listaUl.appendChild(li);
-          }
+          gameCard.onclick = () => loadGameBlob(handle);
         }
       }
 
-      // 3. Borrar de OPFS
-      async function borrarJuego(fileName) {
-        if (!confirm(`¿Seguro que quieres borrar "${fileName}" del iPad?`))
-          return;
+      async function loadGameBlob(fileHandle) {
+        const container = document.getElementById("game-panel");
+        const dashboardPanel = document.getElementById("dashboard-panel");
 
-        try {
-          const root = await navigator.storage.getDirectory();
-          await root.removeEntry(fileName);
+        container.style.display = "block";
+        dashboardPanel.style.display = "none";
 
-          document.getElementById("dos").innerHTML = "";
-          actualizarLista();
-        } catch (err) {
-          console.error("Error al borrar el archivo:", err);
-          alert("No se pudo eliminar el juego.");
-        }
-      }
-
-      async function cargarJuegoBlob(fileHandle) {
-        const container = document.getElementById("dos");
-        container.innerHTML = ""; // Limpiar visor previo
+        container.innerHTML = "";
 
         try {
           // 1. Obtener el archivo desde OPFS
@@ -154,30 +487,7 @@ SC2000.EXE
         }
       }
 
-      // 4. Cargar en js-dos v8 enviando los comandos directamente al ciclo de vida del emulador
-      async function cargarJuego(fileHandle) {
-        const container = document.getElementById("dos");
-        container.innerHTML = ""; // Limpiar instancia previa
-
-        const file = await fileHandle.getFile();
-        const blob = new Blob([await file.arrayBuffer()], {
-          type: "application/zip",
-        });
-        const objectUrl = URL.createObjectURL(blob);
-
-        // Iniciar js-dos v8
-        Dos(container, {
-          url: objectUrl,
-          autoStart: true,
-          dosboxConf: `
-          [autoexec]
-          mount c .
-          c:
-        `,
-        });
-      }
-
-      actualizarLista();
+      loadList();
     </script>
   </body>
 </html>
