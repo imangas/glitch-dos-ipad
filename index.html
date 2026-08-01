@@ -144,6 +144,10 @@
       #detail-panel {
         display: none;
       }
+      .config-area {
+        color: black;
+        height: 250px;
+      }
     </style>
   </head>
   <body
@@ -339,6 +343,11 @@
     </footer>
     <script>
       const gameGrid = document.getElementById("game_grid");
+      const customConf = `[autoexec]
+      mount c .
+      c:
+      SC2000.EXE
+      `;
       async function loadList() {
         const root = await navigator.storage.getDirectory();
 
@@ -432,9 +441,7 @@
           <p
             class="text-[10px] leading-relaxed text-secondary-fixed-dim line-clamp-6"
           >
-            "THREEPWOOD! PREPARE TO FACE THE MIGHT OF LECHUCK! AN ADVENTURE OF
-            SWASHBUCKLING, INSULT SWORD FIGHTING, AND RUBBER CHICKENS WITH
-            PULLEYS IN THE MIDDLE."
+            <textarea id="game-dos-config" class="config-area" name="config" height="300">${customConf}</textarea>
           </p>
         </div>`;
 
@@ -482,6 +489,8 @@
       async function loadGameBlob(fileHandle) {
         const container = document.getElementById("game-panel");
         const dashboardPanel = document.getElementById("dashboard-panel");
+        const configGame =
+          document.getElementById("game-dos-config").value || customConf;
 
         container.style.display = "block";
         dashboardPanel.style.display = "none";
@@ -497,14 +506,9 @@
           const zip = await JSZip.loadAsync(arrayBuffer);
 
           // 3. Crear o sobrescribir 'dosbox.conf' en la raíz del ZIP
-          const customConf = `[autoexec]
-      mount c .
-      c:
-      SC2000.EXE
-      `;
 
           // Inyectar el archivo de configuración
-          zip.file(".jsdos/dosbox.conf", customConf);
+          zip.file(".jsdos/dosbox.conf", configGame);
 
           // 4. Generar un nuevo Blob ZIP en memoria
           const bundleBlob = await zip.generateAsync({
