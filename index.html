@@ -159,20 +159,21 @@
     >
       <div class="flex items-center gap-4">
         <span class="text-lg font-bold text-[#57d9d9] font-['Space_Grotesk']"
-          >C:\SYSTEM\LAUNCHER.EXE</span
+          ><strike>C:\SYSTEM\LAUNCHER.EXE</strike></span
         >
         <div class="hidden md:flex gap-6 ml-8">
           <button
             class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#57d9d9] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
           >
-            F1:HELP
+            <strike>F1:HELP</strike>
           </button>
           <button
             class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
           >
-            F2:CONFIG
+            <strike>F2:CONFIG</strike>
           </button>
           <button
+            id="exit-game-button"
             class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
           >
             F10:EXIT
@@ -186,7 +187,9 @@
         <span class="material-symbols-outlined text-[#c7c6c6] text-base"
           >settings</span
         >
-        <span class="material-symbols-outlined text-[#c7c6c6] text-base"
+        <span
+          id="turn-off-button"
+          class="material-symbols-outlined text-[#c7c6c6] text-base"
           >power_settings_new</span
         >
       </div>
@@ -206,7 +209,7 @@
           <div
             class="text-[#57d9d9] font-['Space_Grotesk'] font-bold text-xs uppercase opacity-60 mb-2"
           >
-            &gt; DRIVES
+            <strike>&gt; DRIVES</strike>
           </div>
           <div class="space-y-1">
             <div
@@ -218,7 +221,7 @@
                 >grid_view</span
               >
               <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
-                >C: SYSTEM_DRIVE</span
+                ><strike>C: SYSTEM_DRIVE</strike></span
               >
             </div>
             <div
@@ -226,7 +229,7 @@
             >
               <span class="material-symbols-outlined text-sm">storage</span>
               <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
-                >A: FLOPPY_DISK</span
+                ><strike>A: FLOPPY_DISK</strike></span
               >
             </div>
             <div
@@ -234,7 +237,7 @@
             >
               <span class="material-symbols-outlined text-sm">album</span>
               <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
-                >D: CD-ROM_OS</span
+                ><strike>D: CD-ROM_OS</strike></span
               >
             </div>
           </div>
@@ -243,7 +246,7 @@
           <div
             class="text-[#57d9d9] font-['Space_Grotesk'] font-bold text-xs uppercase opacity-60 mb-2"
           >
-            &gt; CATEGORIES
+            <strike>&gt; CATEGORIES</strike>
           </div>
           <div class="space-y-1">
             <div
@@ -251,7 +254,7 @@
             >
               <span class="material-symbols-outlined text-sm">star</span>
               <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
-                >FAVORITES</span
+                ><strike>FAVORITES</strike></span
               >
             </div>
             <div
@@ -259,7 +262,7 @@
             >
               <span class="material-symbols-outlined text-sm">history</span>
               <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
-                >RECENT</span
+                ><strike>RECENT</strike></span
               >
             </div>
             <div
@@ -269,7 +272,7 @@
                 >construction</span
               >
               <span class="font-['Space_Grotesk'] font-medium uppercase text-xs"
-                >TOOLS</span
+                ><strike>TOOLS</strike></span
               >
             </div>
           </div>
@@ -318,31 +321,33 @@
     >
       <div class="flex gap-6 items-center">
         <div class="flex items-center gap-2">
-          <span class="text-[10px] text-secondary">CONVENTIONAL_MEM:</span>
+          <span class="text-[10px] text-secondary"><strike>CONVENTIONAL_MEM:</strike></span>
           <span class="text-[10px] text-primary font-bold"
-            >598 KB / 640 KB FREE</span
+            ><strike>XXX KB / XXX KB FREE</strike></span
           >
-        </div>
+        </div></strike>
         <div class="h-3 w-[1px] bg-outline-variant"></div>
         <div class="flex items-center gap-2">
-          <span class="text-[10px] text-secondary">EXTENDED_MEM:</span>
-          <span class="text-[10px] text-primary font-bold">15,360 KB EMS</span>
+          <span class="text-[10px] text-secondary"><strike>EXTENDED_MEM:</strike></span>
+          <span class="text-[10px] text-primary font-bold">XXX KB EMS</span>
         </div>
       </div>
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-2 text-[10px] text-secondary">
-          <span class="material-symbols-outlined text-[12px]">schedule</span>
-          <span class="font-bold">21:34:58</span>
+          <span class="material-symbols-outlined text-[12px]"><strike>schedule</strike></span>
+          <span class="font-bold"><strike>21:34:58</strike></span>
         </div>
         <div
           class="bg-primary/20 px-2 py-0.5 text-[10px] text-primary font-bold uppercase"
         >
-          SYSTEM_STABLE
+          <strike>SYSTEM_STABLE</strike>
         </div>
       </div>
     </footer>
     <script>
+      const gamePlayer = undefined;
       const gameGrid = document.getElementById("game_grid");
+      let gameRuning = false;
       const customConf = `[autoexec]
       mount c .
       c:
@@ -350,6 +355,7 @@
       `;
       async function loadList() {
         const root = await navigator.storage.getDirectory();
+        gameGrid.innerHTML = "";
 
         for await (const [name, handle] of root.entries()) {
           if (!(handle.kind === "file" && name.endsWith(".zip"))) {
@@ -497,7 +503,6 @@
 
         container.innerHTML = "";
 
-        try {
           // 1. Obtener el archivo desde OPFS
           const file = await fileHandle.getFile();
           const arrayBuffer = await file.arrayBuffer();
@@ -518,14 +523,8 @@
           const objectUrl = URL.createObjectURL(bundleBlob);
 
           // 5. Iniciar js-dos v8 pasándole la URL del Blob generado
-          Dos(container, {
-            url: objectUrl,
-            autoStart: true,
-          });
-        } catch (err) {
-          console.error("Error al cargar el juego en js-dos v8:", err);
-          alert("No se pudo iniciar el emulador.");
-        }
+          await startGame({container, url: objectUrl});
+        
       }
 
       async function deleteGame(fileName) {
@@ -567,6 +566,49 @@
         loadList();
       }
 
+      function setupTopBarMenu() {
+        const exitGameButton = document.getElementById("exit-game-button");
+        exitGameButton.style.display = 'none';
+        exitGameButton.addEventListener("click", () => {
+          if (!window?.gamePlayer) return;
+
+          const container = document.getElementById("game-panel");
+          const dashboardPanel = document.getElementById("dashboard-panel");
+
+          stopGame();
+
+          container.innerHTML = "";
+          container.style.display = "none";
+          dashboardPanel.style.display = "";
+          loadList();
+        });
+      }
+
+      function displayTopBarMenu() {
+        document.getElementById("exit-game-button").style.display = gameRuning ? '': 'none';
+      }
+
+      async function startGame({container, url}) {
+        try{
+          window.gamePlayer = Dos(container, {
+            url,
+            autoStart: true,
+          });
+        } catch (err) {
+          console.error("Error al cargar el juego en js-dos v8:", err);
+          alert("No se pudo iniciar el emulador.");
+        }
+        gameRuning = true;
+
+        displayTopBarMenu()
+      }
+
+      function stopGame() {
+        window.gamePlayer.stop();
+        gameRuning = false;
+        displayTopBarMenu();
+      }
+
       async function bootstrap() {
         await loadList();
 
@@ -578,8 +620,7 @@
         });
 
         inputFile.addEventListener("change", installGame);
-
-        installGameButton.onclick;
+        setupTopBarMenu();
       }
 
       bootstrap();
