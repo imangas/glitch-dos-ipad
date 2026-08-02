@@ -173,10 +173,16 @@
             <strike>F2:CONFIG</strike>
           </button>
           <button
+            id="save-game-button"
+            class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
+          >
+            SAVE GAME
+          </button>
+          <button
             id="exit-game-button"
             class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
           >
-            F10:EXIT
+            EXIT
           </button>
         </div>
       </div>
@@ -348,6 +354,7 @@
       const gamePlayer = undefined;
       const gameGrid = document.getElementById("game_grid");
       let gameRuning = false;
+      let activeCi = null;
       const customConf = `[autoexec]
       mount c .
       c:
@@ -571,6 +578,7 @@
         exitGameButton.style.display = 'none';
         exitGameButton.addEventListener("click", () => {
           if (!window?.gamePlayer) return;
+          if (!gameRuning) return;
 
           const container = document.getElementById("game-panel");
           const dashboardPanel = document.getElementById("dashboard-panel");
@@ -582,10 +590,29 @@
           dashboardPanel.style.display = "";
           loadList();
         });
+
+        const saveGameButton = document.getElementById("save-game-button");
+        saveGameButton.style.display = 'none';
+        saveGameButton.addEventListener("click", async () => {
+          if (!window?.gamePlayer) return;
+          if (!gameRuning) return;
+          if (!activeCi) {
+            alert("El juego todavía no está listo.");
+            return;
+          }
+
+          try {
+            await exportSavegameToOPFS(activeCi, "ACITY.SC2", "simcity2k", "ACITY.SC2");
+            alert("¡Partida guardada correctamente en OPFS!");
+          } catch (e) {
+            alert("Error al guardar: " + e.message);
+          }
+        });
       }
 
       function displayTopBarMenu() {
         document.getElementById("exit-game-button").style.display = gameRuning ? '': 'none';
+        document.getElementById("save-game-button").style.display = gameRuning ? '': 'none';
       }
 
       async function startGame({container, url}) {
@@ -593,6 +620,14 @@
           window.gamePlayer = Dos(container, {
             url,
             autoStart: true,
+            fsChanges: {
+              local: false,
+            },
+            onEvent: (event, ci) => {
+              if (event === "ci-ready") {
+                activeCi = ci;
+              }
+            },
           });
         } catch (err) {
           console.error("Error al cargar el juego en js-dos v8:", err);
@@ -609,6 +644,59 @@
         displayTopBarMenu();
       }
 
+      async function fileExistsInDOS(ci, path) {
+        const module = typeof ci.getModule === 'function' ? ci.getModule() : ci.module;
+        
+        if (module && module.FS) {
+          // FS.analyzePath devuelve información sobre el nodo en el VFS
+          const info = module.FS.analyzePath(path);
+          return info.exists && !info.error;
+        }
+        
+        return false;
+      }
+
+      async function exportSavegameToOPFS(ci, sourcePath, gameSlug, targetName) {
+        if (!ci) {
+          throw new Error("El CommandInterface (ci) aún no está listo.");
+        }
+
+        try {
+          // 1. Leer los bytes desde js-dos 8 usando la API basada en Promesas
+          // ci.fsReadFile devuelve una Promise<Uint8Array>
+          let fileBytes;
+          try {
+            fileBytes = await ci.fsReadFile(sourcePath);
+          } catch(err) {
+            throw new Error `File ${sourcePath} not found.`;
+          }
+
+          if (!fileBytes || fileBytes.length === 0) {
+            throw new Error(`El archivo ${sourcePath} no existe o está vacío.`);
+          }
+
+          // 2. Obtener la carpeta raíz de OPFS
+          const root = await navigator.storage.getDirectory();
+
+          // 3. Crear la estructura de carpetas: savegames -> <gameSlug>
+          const savegamesFolder = await root.getDirectoryHandle("savegames", { create: true });
+          const gameFolder = await savegamesFolder.getDirectoryHandle(gameSlug, { create: true });
+
+          // 4. Crear el archivo en OPFS y escribir el Uint8Array directamente
+          const fileHandle = await gameFolder.getFileHandle(targetName, { create: true });
+          const writable = await fileHandle.createWritable();
+
+          await writable.write(fileBytes);
+          await writable.close();
+
+          console.log(`[OPFS] Partida exportada con éxito a: savegames/${gameSlug}/${targetName}`);
+          return true;
+        } catch (err) {
+          console.error("Error al exportar la partida a OPFS:", err);
+          throw err;
+        }
+      }
+      
       async function bootstrap() {
         await loadList();
 
