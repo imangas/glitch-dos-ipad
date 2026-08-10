@@ -522,6 +522,16 @@
           // Inyectar el archivo de configuración
           zip.file(".jsdos/dosbox.conf", configGame);
 
+          const saveFileName = 'GAME.SC2';
+          const saveBytes = await getSavegameFromOPFS('simcity2k', saveFileName);
+
+          if (saveBytes) {
+            // Meter/Sobrescribir la partida guardada directamente DENTRO del ZIP en memoria
+            zip.file(saveFileName, saveBytes);
+            console.log(`[OPFS] Archivo ${saveFileName} metido en el bundle ZIP antes del arranque.`);
+          }
+
+
           // 4. Generar un nuevo Blob ZIP en memoria
           const bundleBlob = await zip.generateAsync({
             type: "blob",
@@ -548,6 +558,41 @@
           alert("No se pudo eliminar el juego.");
         }
         loadList();
+      }
+
+      async function getSavegameFromOPFS(gameSlug, fileName) {
+        try {
+          // 1. Obtener la raíz del OPFS
+          const root = await navigator.storage.getDirectory();
+
+          // 2. Navegar secuencialmente por las carpetas savegames/<gameSlug>
+          const savegamesFolder = await root.getDirectoryHandle("savegames");
+          const gameFolder = await savegamesFolder.getDirectoryHandle(gameSlug);
+
+          // 3. Obtener el manipulador del archivo
+          const fileHandle = await gameFolder.getFileHandle(fileName);
+
+          // 4. Leer el archivo y convertirlo a Uint8Array
+          const file = await fileHandle.getFile();
+          const arrayBuffer = await file.arrayBuffer();
+
+          if (arrayBuffer.byteLength === 0) {
+            console.warn(`[OPFS] El archivo 'savegames/${gameSlug}/${fileName}' existe pero está vacío.`);
+            return null;
+          }
+
+          console.log(`[OPFS] Archivo de guardado recuperado: ${fileName} (${arrayBuffer.byteLength} bytes)`);
+          return new Uint8Array(arrayBuffer);
+
+        } catch (err) {
+          // Es completamente normal que lance 'NotFoundError' la primera vez que se juega
+          if (err.name === "NotFoundError") {
+            console.log(`[OPFS] No se encontró partida guardada previa para: savegames/${gameSlug}/${fileName}`);
+          } else {
+            console.error("[OPFS] Error leyendo el archivo desde el almacenamiento privado:", err);
+          }
+          return null;
+        }
       }
 
       async function installGame(event) {
@@ -602,7 +647,7 @@
           }
 
           try {
-            await exportSavegameToOPFS(activeCi, "ACITY.SC2", "simcity2k", "ACITY.SC2");
+            await exportSavegameToOPFS(activeCi, "GAME.SC2", "simcity2k", "GAME.SC2");
             alert("¡Partida guardada correctamente en OPFS!");
           } catch (e) {
             alert("Error al guardar: " + e.message);
