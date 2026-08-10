@@ -1,13 +1,70 @@
-// sw.js - Service Worker básico para activar la PWA
+// sw.js
+const CACHE_NAME = 'dos-pwa-v2';
+
+// 1. URLs exactas a precargar en la instalación
+const ASSETS_TO_CACHE = [
+  './',
+  './index.html',
+  './manifest.json',
+  // Librerías JS
+  'https://v8.js-dos.com/latest/js-dos.js',
+  'https://v8.js-dos.com/latest/wdosbox.wasm',
+  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  // Tailwind CDN (incluyendo los plugins de la URL)
+  'https://cdn.tailwindcss.com?plugins=forms,container-queries',
+  // CSS de Google Fonts
+  'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap',
+  'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap',
+];
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Guardando Tailwind, Fonts y scripts en caché...');
+      return cache.addAll(ASSETS_TO_CACHE);
+    })
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
+// 2. Interceptador universal: Sirve desde caché y guarda dinámicamente (.woff2 de gstatic)
 self.addEventListener('fetch', (event) => {
-  // Responde directamente con la red
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      // Si ya está guardado (HTML, JS, CSS o la fuente .woff2), se devuelve
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      // Si no está (por ejemplo, la primera vez que carga un archivo .woff2 desde fonts.gstatic.com)
+      return fetch(event.request).then((networkResponse) => {
+        // Validar respuesta correcta
+        if (!networkResponse || networkResponse.status !== 200) {
+          return networkResponse;
+        }
+
+        // Guardar una copia en la Cache Storage para el futuro uso offline
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+
+        return networkResponse;
+      });
+    })
+  );
 });

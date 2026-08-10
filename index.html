@@ -5,6 +5,8 @@
     <meta charset="UTF-8" />
     <title>GlitchDOS</title>
 
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+
     <!-- Indicar a iOS que se comporte como una Web App -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
@@ -22,30 +24,36 @@
     <!-- js-dos v8 style & script -->
     <link rel="stylesheet" href="https://v8.js-dos.com/latest/js-dos.css" />
     <script src="https://v8.js-dos.com/latest/js-dos.js"></script>
+  
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-      rel="stylesheet"
-    />
+
     <script id="tailwind-config">
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("./sw.js")
-            .then((reg) => console.log("Service Worker registrado con éxito"))
-            .catch((err) =>
-              console.error("Error al registrar Service Worker:", err),
-            );
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+          try {
+            const reg = await navigator.serviceWorker.register('./sw.js');
+            console.log('Service Worker activo en scope:', reg.scope);
+
+            if (navigator.onLine) {
+              fetch('https://v8.js-dos.com/latest/wdosbox.wasm', { mode: 'cors' }).catch(() => {});
+            }
+          } catch (err) {
+            console.error('Error registrando Service Worker:', err);
+          }
         });
       }
 
