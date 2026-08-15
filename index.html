@@ -41,6 +41,8 @@
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 
+    <script src="./games-config.js"></script>
+
     <script id="tailwind-config">
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', async () => {
@@ -56,6 +58,8 @@
           }
         });
       }
+
+      let gameRuningId = null;
 
       tailwind.config = {
         darkMode: "class",
@@ -314,7 +318,7 @@
           <h1
             class="text-3xl font-bold font-headline text-on-surface phosphor-glow uppercase tracking-tight"
           >
-            EXECUTABLE_LIBRARY
+            DOS GAMES
           </h1>
         </div>
         <!-- Game Grid -->
@@ -343,7 +347,7 @@
         <div class="h-3 w-[1px] bg-outline-variant"></div>
         <div class="flex items-center gap-2">
           <span class="text-[10px] text-secondary"><strike>EXTENDED_MEM:</strike></span>
-          <span class="text-[10px] text-primary font-bold">XXX KB EMS</span>
+          <span class="text-[10px] text-primary font-bold"><strike>XXX KB EMS</strike></span>
         </div>
       </div>
       <div class="flex items-center gap-4">
@@ -363,11 +367,15 @@
       const gameGrid = document.getElementById("game_grid");
       let gameRuning = false;
       let activeCi = null;
-      const customConf = `[autoexec]
-      mount c .
-      c:
-      SC2000.EXE
-      `;
+
+      function getGameIdByFilename(filename) {
+        return filename.replace('.zip', '');
+      }
+
+      function getGameConfigByGameId(gameId) {
+        return window.gamesData[gameId] || window.gamesData.generic;
+      }
+
       async function loadList() {
         const root = await navigator.storage.getDirectory();
         gameGrid.innerHTML = "";
@@ -376,9 +384,9 @@
           if (!(handle.kind === "file" && name.endsWith(".zip"))) {
             continue;
           }
-          /*if (!name.match(".*\.zip")) {
-                  continue;
-                }*/
+          const gameId = getGameIdByFilename(name);
+          const gameConfig = getGameConfigByGameId(gameId);
+
           const gameCard = document.createElement("div");
           gameCard.className =
             "group cursor-pointer bg-surface-container-low border border-outline-variant/20 hover:border-primary/50 transition-all p-3";
@@ -393,23 +401,30 @@
                 </div>
                 <div class="flex justify-between items-start">
                   <div>
-                    <h3 class="text-on-surface font-bold text-sm group-hover:text-primary">${name}
+                    <h3 class="text-on-surface font-bold text-sm group-hover:text-primary">${gameConfig.name}
                     </h3>
-                    <p class="text-secondary text-[10px] mt-1 uppercase">3DO</p>
+                    <p class="text-secondary text-[10px] mt-1 uppercase">${gameConfig?.company || '-'}</p>
                   </div>
-                  <span class="text-primary font-bold text-[10px] tracking-widest">[INFO]</span>
+                  <span class="text-primary font-bold text-[10px] tracking-widest"><strike>[INFO]</strike></span>
                 </div>`;
 
           gameGrid.append(gameCard);
 
-          gameCard.onclick = () => loadGameDetails(name, handle);
+          gameCard.onclick = () => loadGameDetails(handle, gameId);
         }
       }
 
-      async function loadGameDetails(name, handle) {
+      async function loadGameDetails(handle, gameId) {
         const detailPanel = document.getElementById("detail-panel");
         detailPanel.style.display = "block";
         detailPanel.innerHTML = "";
+        gameRuningId = gameId;
+        const gameConfig = getGameConfigByGameId(gameRuningId);
+
+        const customConf = gameConfig?.dosboxConfig || `[autoexec]
+        mount c .
+        c:
+        `;
 
         const gameDetails = document.createElement("div");
         gameDetails.innerHTML = `<div class="mb-6 flex flex-col gap-4">
@@ -434,27 +449,14 @@
             <h2
               class="text-xl font-bold text-primary phosphor-glow tracking-tight uppercase"
             >
-              ${name.toUpperCase()}
+              ${gameConfig.name.toUpperCase()}
             </h2>
-            <div class="space-y-2 border-t border-outline-variant/30 pt-4">
-              <div class="flex justify-between text-[11px]">
-                <span class="text-secondary">SYSTEM_CPU:</span>
-                <span class="text-on-surface font-bold">i386_DX @ 33MHZ</span>
-              </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-secondary">REQUIRED_RAM:</span>
-                <span class="text-on-surface font-bold">640 KB BASE</span>
-              </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-secondary">VIDEO_MODE:</span>
-                <span class="text-on-surface font-bold">VGA 320x200x256</span>
-              </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-secondary">AUDIO_DRIVER:</span>
-                <span class="text-on-surface font-bold">SOUND_BLASTER_16</span>
-              </div>
-            </div>
           </div>
+        </div>
+        <div class="recessed-panel bg-surface-container-lowest p-4 mb-6 border-b border-r border-outline-variant/20">
+          <p class="text-[10px] leading-relaxed text-secondary-fixed-dim line-clamp-6">
+              ${gameConfig.description}
+          </p>
         </div>
         <div
           class="recessed-panel bg-surface-container-lowest p-4 mb-6 border-b border-r border-outline-variant/20"
@@ -470,31 +472,11 @@
         gameButtons.className = "mt-auto flex flex-col gap-3";
         gameDetails.append(gameButtons);
 
-        /*gameButtons.innerHTML = `
-          <button
-            class=""
-          >
-            EXECUTE
-          </button>
-          <div class="flex gap-2">
-            <button
-              class="flex-1 bg-surface-container-high text-secondary py-2 text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30 hover:bg-surface-variant"
-            >
-              SETUP
-            </button>
-            <button
-              class="flex-1 bg-surface-container-high text-secondary py-2 text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30 hover:bg-surface-variant"
-            >
-              MANUAL
-            </button>
-          </div>
-        `;*/
-
         const gameButtonLaunch = document.createElement("button");
         gameButtonLaunch.className =
           "w-full bg-[#57d9d9] text-[#003737] py-4 text-center font-extrabold text-lg tracking-[0.2em] shadow-[0_0_20px_rgba(87,217,217,0.2)] hover:brightness-110 active:scale-95 transition-all";
         gameButtonLaunch.textContent = "LAUNCH";
-        gameButtonLaunch.onclick = () => loadGameBlob(handle);
+        gameButtonLaunch.onclick = () => loadGameBlob(handle, gameConfig);
         gameButtons.append(gameButtonLaunch);
 
         const gameButtonDelete = document.createElement("button");
@@ -507,7 +489,7 @@
         detailPanel.append(gameDetails);
       }
 
-      async function loadGameBlob(fileHandle) {
+      async function loadGameBlob(fileHandle, gameConfig){
         const container = document.getElementById("game-panel");
         const dashboardPanel = document.getElementById("dashboard-panel");
         const configGame =
@@ -525,13 +507,12 @@
           // 2. Leer el ZIP original con JSZip en memoria RAM
           const zip = await JSZip.loadAsync(arrayBuffer);
 
-          // 3. Crear o sobrescribir 'dosbox.conf' en la raíz del ZIP
-
           // Inyectar el archivo de configuración
           zip.file(".jsdos/dosbox.conf", configGame);
 
-          const saveFileName = 'GAME.SC2';
-          const saveBytes = await getSavegameFromOPFS('simcity2k', saveFileName);
+          const opfsSaveFilePath = gameConfig.opfsSaveFilePath;
+          const saveFileName = gameConfig.dosSaveFileName;
+          const saveBytes = await getSavegameFromOPFS(opfsSaveFilePath, saveFileName);
 
           if (saveBytes) {
             // Meter/Sobrescribir la partida guardada directamente DENTRO del ZIP en memoria
@@ -654,8 +635,17 @@
             return;
           }
 
+          if(!gameRuningId) {
+            alert("El juego todavía no está listo.");
+            return;
+          }
+
+          const gameConfig = getGameConfigByGameId(gameRuningId);
+
           try {
-            await exportSavegameToOPFS(activeCi, "GAME.SC2", "simcity2k", "GAME.SC2");
+            await exportSavegameToOPFS(activeCi, gameConfig.dosSaveFileName, gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
+            console.log(gameConfig.dosSaveFileName, gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
+
             alert("¡Partida guardada correctamente en OPFS!");
           } catch (e) {
             alert("Error al guardar: " + e.message);
