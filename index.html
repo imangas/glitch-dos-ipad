@@ -479,12 +479,24 @@
         gameButtonLaunch.onclick = () => loadGameBlob(handle, gameConfig);
         gameButtons.append(gameButtonLaunch);
 
+        const gameExtraButtons = document.createElement("div");
+        gameExtraButtons.className = "flex gap-2";
+        gameButtons.append(gameExtraButtons);
+
+        const gameButtonSetup = document.createElement("button");
+        gameButtonSetup.className =
+          "flex-1 bg-surface-container-high text-secondary py-2 text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30 hover:bg-surface-variant";
+        gameButtonSetup.textContent = "⚙ SETUP";
+        gameButtonSetup.onclick = () => setupGame(name);
+        gameExtraButtons.append(gameButtonSetup);
+
         const gameButtonDelete = document.createElement("button");
         gameButtonDelete.className =
-          "lex-1 bg-surface-container-high text-secondary py-2 text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30 hover:bg-surface-variant";
+          "flex-1 bg-surface-container-high text-secondary py-2 text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30 hover:bg-surface-variant";
         gameButtonDelete.textContent = "🗑️ UNINSTALL";
         gameButtonDelete.onclick = () => deleteGame(name);
-        gameButtons.append(gameButtonDelete);
+        gameExtraButtons.append(gameButtonDelete);
+
 
         detailPanel.append(gameDetails);
       }
@@ -531,6 +543,10 @@
           // 5. Iniciar js-dos v8 pasándole la URL del Blob generado
           await startGame({container, url: objectUrl});
         
+      }
+
+      async function setupGame(name) {
+        alert('not implemented yet.')
       }
 
       async function deleteGame(fileName) {
