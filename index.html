@@ -326,6 +326,7 @@
           id="game_grid"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         ></div>
+      </div>
       </main>
       <!-- Right Detail Panel -->
       <aside
@@ -365,7 +366,7 @@
     <script>
       const gamePlayer = undefined;
       const gameGrid = document.getElementById("game_grid");
-      let gameRuning = false;
+      let isGameRuning = false;
       let activeCi = null;
 
       function getGameIdByFilename(filename) {
@@ -457,15 +458,6 @@
           <p class="text-[10px] leading-relaxed text-secondary-fixed-dim line-clamp-6">
               ${gameConfig.description}
           </p>
-        </div>
-        <div
-          class="recessed-panel bg-surface-container-lowest p-4 mb-6 border-b border-r border-outline-variant/20"
-        >
-          <p
-            class="text-[10px] leading-relaxed text-secondary-fixed-dim line-clamp-6"
-          >
-            <textarea id="game-dos-config" class="config-area" name="config" height="300">${customConf}</textarea>
-          </p>
         </div>`;
 
         const gameButtons = document.createElement("div");
@@ -504,11 +496,12 @@
       async function loadGameBlob(fileHandle, gameConfig){
         const container = document.getElementById("game-panel");
         const dashboardPanel = document.getElementById("dashboard-panel");
-        const configGame =
-          document.getElementById("game-dos-config").value || customConf;
+        const detailPanel = document.getElementById("detail-panel");
+        const configGame = getGameConfigByGameId(gameRuningId).dosboxConfig;
 
         container.style.display = "block";
         dashboardPanel.style.display = "none";
+        detailPanel.style.display = 'none';
 
         container.innerHTML = "";
 
@@ -545,8 +538,89 @@
         
       }
 
+      function cancelSetupGame() {
+        loadList();
+      }
+
+      function saveConfigGame() {
+        const configForm = document.gameConfig;
+        window.gamesData[gameRuningId].dosSaveFilePathValue = configForm.dosSaveFilePath.value;
+        window.gamesData[gameRuningId].dosSaveFileName = configForm.dosSaveFileName.value;
+        window.gamesData[gameRuningId].opfsSaveFilePath = configForm.opfsSaveFilePath.value;
+        window.gamesData[gameRuningId].dosboxConfig = configForm.dosboxConfig.value;
+        loadList();
+      }
+
       async function setupGame(name) {
-        alert('not implemented yet.')
+        const gameConfig = getGameConfigByGameId(gameRuningId);
+        
+        gameGrid.innerHTML = `<div class="grid grid-cols-1 gap-10 md:col-span-2 lg:col-span-3">
+          <form name="gameConfig" action="void 0">
+            <!-- Section: Identity -->
+            <div class="space-y-6">
+              <div class="flex items-center gap-2 mb-4">
+                <span class="text-tertiary font-bold">01.</span>
+                <h2 class="text-on-surface font-bold uppercase text-sm tracking-widest">DOS Parameters</h2>
+                <div class="flex-1 border-t border-outline-variant/30 ml-4"></div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div class="space-y-2">
+              <label class="block text-[10px] text-secondary font-bold uppercase">dos Save File Path</label>
+              <input name="dosSaveFilePath" id="dosSaveFilePath" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.dosSaveFilePath}">
+              </div>
+              <div class="space-y-2">
+              <label class="block text-[10px] text-secondary font-bold uppercase">dos Save File Name</label>
+              <input name="dosSaveFileName" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.dosSaveFileName}">
+              </div>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <div class="flex items-center gap-2 mb-4">
+              <span class="text-tertiary font-bold">02.</span>
+              <h2 class="text-on-surface font-bold uppercase text-sm tracking-widest">Console Parameters</h2>
+              <div class="flex-1 border-t border-outline-variant/30 ml-4"></div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div class="space-y-2">
+              <label class="block text-[10px] text-secondary font-bold uppercase">opfs Save File Path</label>
+              <input name="opfsSaveFilePath" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.opfsSaveFilePath}"/>
+              </div>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <div class="flex items-center gap-2 mb-4">
+              <span class="text-tertiary font-bold">03.</span>
+              <h2 class="text-on-surface font-bold uppercase text-sm tracking-widest">DOSBOX CONFIGURATIONS</h2>
+              <div class="flex-1 border-t border-outline-variant/30 ml-4"></div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div class="space-y-2">
+              <label class="block text-[10px] text-secondary font-bold uppercase">opfs Save File Path</label>
+              <textarea name="dosboxConfig" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" rows="7">${gameConfig.dosboxConfig}</textarea>
+              </div>
+              </div>
+            </div>
+          </form>
+
+            <!-- Final Actions -->
+            <div class="pt-12 pb-24 flex gap-4" id="setup_action_buttons"></div>
+          </div>`;
+
+          const setupActionButtons = document.getElementById('setup_action_buttons');
+
+          const saveConfigActionCancelButton = document.createElement("button");
+          saveConfigActionCancelButton.className = "bg-[#57d9d9] text-[#003737] px-10 py-4 font-black uppercase text-sm hover:bg-[#003737] hover:text-[#57d9d9] transition-colors duration-75 flex items-center gap-3";
+          saveConfigActionCancelButton.innerHTML = '<span class="material-symbols-outlined text-sm">save</span>SAVE CHANGES';
+          setupActionButtons.append(saveConfigActionCancelButton);
+          setupActionButtons.onclick = saveConfigGame;
+
+          const setupActionCancelButton = document.createElement("button");
+          setupActionCancelButton.className = "bg-surface-container-highest text-on-surface border border-outline-variant/30 px-10 py-4 font-bold uppercase text-sm hover:bg-error hover:text-on-error transition-colors duration-75";
+          setupActionCancelButton.innerText = 'CANCEL';
+          setupActionButtons.append(setupActionCancelButton);
+          setupActionCancelButton.onclick = cancelSetupGame;
       }
 
       async function deleteGame(fileName) {
@@ -628,16 +702,18 @@
         exitGameButton.style.display = 'none';
         exitGameButton.addEventListener("click", () => {
           if (!window?.gamePlayer) return;
-          if (!gameRuning) return;
+          if (!isGameRuning) return;
 
           const container = document.getElementById("game-panel");
           const dashboardPanel = document.getElementById("dashboard-panel");
+          const detailPanel = document.getElementById("detail-panel");
 
           stopGame();
 
           container.innerHTML = "";
           container.style.display = "none";
           dashboardPanel.style.display = "";
+          detailPanel.style.display = '';
           loadList();
         });
 
@@ -645,7 +721,7 @@
         saveGameButton.style.display = 'none';
         saveGameButton.addEventListener("click", async () => {
           if (!window?.gamePlayer) return;
-          if (!gameRuning) return;
+          if (!isGameRuning) return;
           if (!activeCi) {
             alert("El juego todavía no está listo.");
             return;
@@ -670,8 +746,8 @@
       }
 
       function displayTopBarMenu() {
-        document.getElementById("exit-game-button").style.display = gameRuning ? '': 'none';
-        document.getElementById("save-game-button").style.display = gameRuning ? '': 'none';
+        document.getElementById("exit-game-button").style.display = isGameRuning ? '': 'none';
+        document.getElementById("save-game-button").style.display = isGameRuning ? '': 'none';
       }
 
       async function startGame({container, url}) {
@@ -692,14 +768,14 @@
           console.error("Error al cargar el juego en js-dos v8:", err);
           alert("No se pudo iniciar el emulador.");
         }
-        gameRuning = true;
+        isGameRuning = true;
 
         displayTopBarMenu()
       }
 
       function stopGame() {
         window.gamePlayer.stop();
-        gameRuning = false;
+        isGameRuning = false;
         displayTopBarMenu();
       }
 
