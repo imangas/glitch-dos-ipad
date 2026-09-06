@@ -364,10 +364,47 @@
       </div>
     </footer>
     <script>
+      const GAMES_CONFIG_FILENAME = "games-config.json";
       const gamePlayer = undefined;
       const gameGrid = document.getElementById("game_grid");
       let isGameRuning = false;
       let activeCi = null;
+
+      async function getGamesConfigFileHandle(create = false) {
+        const root = await navigator.storage.getDirectory();
+        return root.getFileHandle(GAMES_CONFIG_FILENAME, { create });
+      }
+
+      async function saveGamesConfigToOPFS() {
+        try {
+          const fileHandle = await getGamesConfigFileHandle(true);
+          const writable = await fileHandle.createWritable();
+          await writable.write(JSON.stringify(window.gamesData, null, 2));
+          await writable.close();
+          console.log("[OPFS] games-config guardado en OPFS.");
+        } catch (err) {
+          console.error("[OPFS] Error al guardar games-config en OPFS:", err);
+        }
+      }
+
+      async function initGamesConfig() {
+        try {
+          // ¿Existe ya una copia en OPFS?
+          const fileHandle = await getGamesConfigFileHandle(false);
+          const file = await fileHandle.getFile();
+          const text = await file.text();
+          window.gamesData = JSON.parse(text);
+          console.log("[OPFS] games-config cargado desde OPFS.");
+        } catch (err) {
+          if (err.name === "NotFoundError") {
+            // No existe: guardamos una copia del que trae games-config.js por defecto
+            await saveGamesConfigToOPFS();
+            console.log("[OPFS] No existía games-config en OPFS. Copia por defecto creada.");
+          } else {
+            console.error("[OPFS] Error comprobando games-config en OPFS:", err);
+          }
+        }
+      }
 
       function getGameIdByFilename(filename) {
         return filename.replace('.zip', '');
@@ -548,6 +585,7 @@
         window.gamesData[gameRuningId].dosSaveFileName = configForm.dosSaveFileName.value;
         window.gamesData[gameRuningId].opfsSaveFilePath = configForm.opfsSaveFilePath.value;
         window.gamesData[gameRuningId].dosboxConfig = configForm.dosboxConfig.value;
+        saveGamesConfigToOPFS();
         loadList();
       }
 
@@ -830,6 +868,7 @@
       }
       
       async function bootstrap() {
+        await initGamesConfig();
         await loadList();
 
         const installBtn = document.getElementById("install-game-button");
