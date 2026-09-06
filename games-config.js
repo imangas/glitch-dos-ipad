@@ -5,9 +5,9 @@ window.gamesData = {
     "dosSaveFilePath": "SC2K",
     "dosSaveFileName": "CITY.M2",
     "opfsFolder": "sc2k",
-    "dosboxConfig": 
+    "dosboxConfig":
       "[autoexec]\nmount c .\nc:"
-    
+
   },
   "sc2000": {
     "name": "SimCity 2000",
@@ -17,7 +17,7 @@ window.gamesData = {
     "dosSaveFilePath": ".",
     "dosSaveFileName": "GAME.SC2",
     "opfsSaveFilePath": "simcity2k",
-    "dosboxConfig": 
+    "dosboxConfig":
       "[autoexec]\nmount c .\nc:\nSC2000.EXE"
   },
   "ultima-7": {
@@ -26,9 +26,9 @@ window.gamesData = {
     "dosSaveFilePath": "DOOM",
     "dosSaveFileName": "DOOMSAV0.DSG",
     "opfsFolder": "doom",
-    "dosboxConfig": 
+    "dosboxConfig":
       "[autoexec]\nmount c .\nc:\ncd ULTIMA~1\nultima7\n[dos]\nxms=true\nems=false"
-    
+
   },
   "the-incredible-machine": {
     "name": "The Incredible Machine",
@@ -37,8 +37,7 @@ window.gamesData = {
     "dosSaveFilePath": "",
     "dosSaveFileName": "",
     "opfsFolder": "",
-    "dosboxConfig": 
+    "dosboxConfig":
       "[autoexec]\nmount c .\nc:\nCD INCRED~1\nTIM.EXE"
-    
   },
 };
