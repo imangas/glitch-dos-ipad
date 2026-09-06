@@ -730,13 +730,111 @@
         }
       }
 
+      function showNewGameKeyModal(defaultKey) {
+        return new Promise((resolve) => {
+          const overlay = document.createElement("div");
+          overlay.className =
+            "fixed inset-0 z-[100] bg-black/70 flex items-center justify-center";
+
+          overlay.innerHTML = `
+            <div class="bg-surface-container-low border border-primary/40 shadow-[0_0_30px_rgba(87,217,217,0.15)] w-full max-w-md p-6">
+              <div class="flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-primary text-sm">terminal</span>
+                <h2 class="text-primary font-bold uppercase text-sm tracking-widest phosphor-glow">New Game Detected</h2>
+              </div>
+              <p class="text-[10px] text-secondary-fixed-dim mb-4 leading-relaxed">
+                No config entry was found for this game. Enter a unique KEY to register it.
+                Only letters, numbers, "-" and "_" are allowed.
+              </p>
+              <div class="space-y-2 mb-2">
+                <label class="block text-[10px] text-secondary font-bold uppercase">Game Key</label>
+                <input
+                  id="new-game-key-input"
+                  type="text"
+                  class="w-full bg-surface-container-lowest border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors"
+                  value="${defaultKey}"
+                />
+              </div>
+              <p id="new-game-key-error" class="text-[10px] text-error mb-4 h-3"></p>
+              <div class="flex gap-3">
+                <button id="new-game-key-confirm" class="flex-1 bg-[#57d9d9] text-[#003737] py-3 font-black uppercase text-xs tracking-widest hover:brightness-110 active:scale-95 transition-all">
+                  CONFIRM
+                </button>
+                <button id="new-game-key-cancel" class="flex-1 bg-surface-container-highest text-on-surface border border-outline-variant/30 py-3 font-bold uppercase text-xs hover:bg-error hover:text-on-error transition-colors">
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          `;
+
+          document.body.appendChild(overlay);
+
+          const input = overlay.querySelector("#new-game-key-input");
+          const errorLabel = overlay.querySelector("#new-game-key-error");
+          const confirmBtn = overlay.querySelector("#new-game-key-confirm");
+          const cancelBtn = overlay.querySelector("#new-game-key-cancel");
+
+          const KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
+
+          input.focus();
+          input.select();
+
+          input.addEventListener("input", () => {
+            // Elimina en vivo cualquier carácter no permitido
+            const sanitized = input.value.replace(/[^a-zA-Z0-9_-]/g, "");
+            if (sanitized !== input.value) {
+              input.value = sanitized;
+            }
+            errorLabel.textContent = "";
+          });
+
+          const cleanup = (result) => {
+            document.body.removeChild(overlay);
+            resolve(result);
+          };
+
+          confirmBtn.onclick = () => {
+            const key = input.value.trim();
+            if (!key || !KEY_PATTERN.test(key)) {
+              errorLabel.textContent = "Invalid key. Use only letters, numbers, - or _.";
+              input.focus();
+              return;
+            }
+            cleanup(key);
+          };
+
+          cancelBtn.onclick = () => cleanup(null);
+        });
+      }
+
       async function installGame(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         try {
+          const originalGameId = getGameIdByFilename(file.name);
+          let finalFileName = file.name;
+
+          if (!window.gamesData[originalGameId]) {
+            const key = await showNewGameKeyModal(originalGameId);
+
+            if (!key) {
+              // Usuario canceló: no se instala el juego
+              event.target.value = "";
+              return;
+            }
+
+            finalFileName = `${key}.zip`;
+
+            window.gamesData[key] = {
+              ...structuredClone(window.gamesData.generic),
+              name: key,
+            };
+            await saveGamesConfigToOPFS();
+          }
+
           const root = await navigator.storage.getDirectory();
-          const fileHandle = await root.getFileHandle(file.name, {
+          const fileHandle = await root.getFileHandle(finalFileName, {
             create: true,
           });
           const writable = await fileHandle.createWritable();
@@ -744,7 +842,7 @@
           await writable.write(await file.arrayBuffer());
           await writable.close();
 
-          alert(`¡${file.name} Installed!`);
+          alert(`¡${finalFileName} Installed!`);
         } catch (err) {
           console.error("An error occurred while saving the ROM:", err);
           alert("An error occurred while saving the ROM.");
