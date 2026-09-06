@@ -581,6 +581,8 @@
 
       function saveConfigGame() {
         const configForm = document.gameConfig;
+        window.gamesData[gameRuningId].name = configForm.name.value;
+        window.gamesData[gameRuningId].wallscroll = configForm.wallscroll.value;
         window.gamesData[gameRuningId].dosSaveFilePathValue = configForm.dosSaveFilePath.value;
         window.gamesData[gameRuningId].dosSaveFileName = configForm.dosSaveFileName.value;
         window.gamesData[gameRuningId].opfsSaveFilePath = configForm.opfsSaveFilePath.value;
@@ -594,6 +596,24 @@
         
         gameGrid.innerHTML = `<div class="grid grid-cols-1 gap-10 md:col-span-2 lg:col-span-3">
           <form name="gameConfig" action="void 0">
+            <!-- Section: Game Info -->
+            <div class="space-y-6">
+              <div class="flex items-center gap-2 mb-4">
+                <span class="text-tertiary font-bold">00.</span>
+                <h2 class="text-on-surface font-bold uppercase text-sm tracking-widest">Game Info</h2>
+                <div class="flex-1 border-t border-outline-variant/30 ml-4"></div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div class="space-y-2">
+              <label class="block text-[10px] text-secondary font-bold uppercase">Name</label>
+              <input name="name" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.name ?? ''}">
+              </div>
+              <div class="space-y-2">
+              <label class="block text-[10px] text-secondary font-bold uppercase">Wallscroll (image path/URL)</label>
+              <input name="wallscroll" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.wallscroll ?? ''}">
+              </div>
+              </div>
+            </div>
             <!-- Section: Identity -->
             <div class="space-y-6">
               <div class="flex items-center gap-2 mb-4">
