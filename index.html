@@ -359,14 +359,15 @@
         <div
           class="bg-primary/20 px-2 py-0.5 text-[10px] text-primary font-bold uppercase"
         >
-          <strike>SYSTEM_STABLE</strike>
+          <strike id="version_info"></strike>
         </div>
       </div>
     </footer>
     <script>
+      const VERSION = '0.0.5';
       const GAMES_CONFIG_FILENAME = "games-config.json";
-      const gamePlayer = undefined;
-      const gameGrid = document.getElementById("game_grid");
+      const GAME_PLAYER = undefined;
+      const GAME_GRID = document.getElementById("game_grid");
       let isGameRuning = false;
       let activeCi = null;
 
@@ -416,7 +417,7 @@
 
       async function loadList() {
         const root = await navigator.storage.getDirectory();
-        gameGrid.innerHTML = "";
+        GAME_GRID.innerHTML = "";
 
         for await (const [name, handle] of root.entries()) {
           if (!(handle.kind === "file" && name.endsWith(".zip"))) {
@@ -446,7 +447,7 @@
                   <span class="text-primary font-bold text-[10px] tracking-widest"><strike>[INFO]</strike></span>
                 </div>`;
 
-          gameGrid.append(gameCard);
+          GAME_GRID.append(gameCard);
 
           gameCard.onclick = () => loadGameDetails(handle, name, gameId);
         }
@@ -558,7 +559,7 @@
 
           if (saveBytes) {
             // Meter/Sobrescribir la partida guardada directamente DENTRO del ZIP en memoria
-            zip.file(saveFileName, saveBytes);
+            zip.file([gameConfig.dosSaveFilePath, gameConfig.dosSaveFileName].join('/'), saveBytes);
             console.log(`[OPFS] Archivo ${saveFileName} metido en el bundle ZIP antes del arranque.`);
           }
 
@@ -583,7 +584,7 @@
         const configForm = document.gameConfig;
         window.gamesData[gameRuningId].name = configForm.name.value;
         window.gamesData[gameRuningId].wallscroll = configForm.wallscroll.value;
-        window.gamesData[gameRuningId].dosSaveFilePathValue = configForm.dosSaveFilePath.value;
+        window.gamesData[gameRuningId].dosSaveFilePath = configForm.dosSaveFilePath.value;
         window.gamesData[gameRuningId].dosSaveFileName = configForm.dosSaveFileName.value;
         window.gamesData[gameRuningId].opfsSaveFilePath = configForm.opfsSaveFilePath.value;
         window.gamesData[gameRuningId].dosboxConfig = configForm.dosboxConfig.value;
@@ -594,7 +595,7 @@
       async function setupGame(name) {
         const gameConfig = getGameConfigByGameId(gameRuningId);
         
-        gameGrid.innerHTML = `<div class="grid grid-cols-1 gap-10 md:col-span-2 lg:col-span-3">
+        GAME_GRID.innerHTML = `<div class="grid grid-cols-1 gap-10 md:col-span-2 lg:col-span-3">
           <form name="gameConfig" action="void 0">
             <!-- Section: Game Info -->
             <div class="space-y-6">
@@ -888,8 +889,8 @@
           const gameConfig = getGameConfigByGameId(gameRuningId);
 
           try {
-            await exportSavegameToOPFS(activeCi, gameConfig.dosSaveFileName, gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
-            console.log(gameConfig.dosSaveFileName, gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
+            await exportSavegameToOPFS(activeCi, [gameConfig.dosSaveFilePath, gameConfig.dosSaveFileName].join('/'), gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
+            console.log([gameConfig.dosSaveFilePath, gameConfig.dosSaveFileName].join('/'), gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
 
             alert("¡Partida guardada correctamente en OPFS!");
           } catch (e) {
@@ -988,6 +989,9 @@
       async function bootstrap() {
         await initGamesConfig();
         await loadList();
+
+        const versionInfo = document.getElementById('version_info');
+        versionInfo.innerHTML = VERSION;
 
         const installBtn = document.getElementById("install-game-button");
         const inputFile = document.getElementById("rom-input");
