@@ -40,4 +40,14 @@ window.gamesData = {
     "dosboxConfig":
       "[autoexec]\nmount c .\nc:\nCD INCRED~1\nTIM.EXE"
   },
+  "atlantis": {
+    "name": "Indiana Jones and the Fate of the Atlantis",
+    "wallscroll": "",
+    "description": "Indiana Jones",
+    "dosSaveFilePath": "FATE",
+    "dosSaveFileName": "SAVEGAME.001",
+    "opfsFolder": "atlantis",
+    "dosboxConfig":
+      "[autoexec]\nmount c .\nc:\nCD ATLANTIS/ATLANTIS\nATLANTIS.EXE"
+  },
 };
