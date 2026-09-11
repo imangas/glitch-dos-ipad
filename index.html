@@ -185,31 +185,38 @@
             <strike>F2:CONFIG</strike>
           </button>
           <button
-            id="save-game-button"
-            class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
+            id="save-game-button-desktop"
+            class="save-game-button font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
+            style="display: none"
           >
             SAVE GAME
           </button>
           <button
-            id="exit-game-button"
-            class="font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
+            id="exit-game-button-desktop"
+            class="exit-game-button font-['Space_Grotesk'] uppercase tracking-tighter text-sm text-[#c7c6c6] hover:bg-[#57d9d9] hover:text-[#003737] px-2 py-1 transition-colors duration-0 active:invert"
+            style="display: none"
           >
             EXIT
           </button>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="material-symbols-outlined text-[#57d9d9] text-base"
-          >terminal</span
-        >
-        <span class="material-symbols-outlined text-[#c7c6c6] text-base"
-          >settings</span
+      <div class="flex items-center gap-1">
+        <span
+          id="save-game-button-mobile"
+          class="save-game-button md:hidden material-symbols-outlined text-[#c7c6c6] hover:text-primary cursor-pointer text-base p-2 -m-2"
+          style="display: none"
+          title="Save Game"
+          >save</span
         >
         <span
-          id="turn-off-button"
-          class="material-symbols-outlined text-[#c7c6c6] text-base"
+          id="exit-game-button-mobile"
+          class="exit-game-button md:hidden material-symbols-outlined text-[#c7c6c6] hover:text-primary cursor-pointer text-base p-2 -m-2"
+          style="display: none"
+          title="Exit Game"
           >power_settings_new</span
         >
+        <span class="material-symbols-outlined text-[#57d9d9] text-base">terminal</span>
+        <span class="material-symbols-outlined text-[#c7c6c6] text-base">settings</span>
       </div>
     </header>
     <div
@@ -876,56 +883,65 @@
       }
 
       function setupTopBarMenu() {
-        const exitGameButton = document.getElementById("exit-game-button");
-        exitGameButton.style.display = 'none';
-        exitGameButton.addEventListener("click", () => {
-          if (!window?.gamePlayer) return;
-          if (!isGameRuning) return;
+        const exitGameButtons = document.querySelectorAll(".exit-game-button");
+        const saveGameButtons = document.querySelectorAll(".save-game-button");
 
-          const container = document.getElementById("game-panel");
-          const dashboardPanel = document.getElementById("dashboard-panel");
-          const detailPanel = document.getElementById("detail-panel");
+        exitGameButtons.forEach((btn) => {
+          btn.style.display = 'none';
+          btn.addEventListener("click", () => {
+            if (!window?.gamePlayer) return;
+            if (!isGameRuning) return;
 
-          stopGame();
+            const container = document.getElementById("game-panel");
+            const dashboardPanel = document.getElementById("dashboard-panel");
+            const detailPanel = document.getElementById("detail-panel");
 
-          container.innerHTML = "";
-          container.style.display = "none";
-          dashboardPanel.style.display = "";
-          detailPanel.style.display = '';
-          loadList();
+            stopGame();
+
+            container.innerHTML = "";
+            container.style.display = "none";
+            dashboardPanel.style.display = "";
+            detailPanel.style.display = '';
+            loadList();
+          });
         });
 
-        const saveGameButton = document.getElementById("save-game-button");
-        saveGameButton.style.display = 'none';
-        saveGameButton.addEventListener("click", async () => {
-          if (!window?.gamePlayer) return;
-          if (!isGameRuning) return;
-          if (!activeCi) {
-            alert("El juego todavía no está listo.");
-            return;
-          }
+        saveGameButtons.forEach((btn) => {
+          btn.style.display = 'none';
+          btn.addEventListener("click", async () => {
+            if (!window?.gamePlayer) return;
+            if (!isGameRuning) return;
+            if (!activeCi) {
+              alert("El juego todavía no está listo.");
+              return;
+            }
 
-          if(!gameRuningId) {
-            alert("El juego todavía no está listo.");
-            return;
-          }
+            if(!gameRuningId) {
+              alert("El juego todavía no está listo.");
+              return;
+            }
 
-          const gameConfig = getGameConfigByGameId(gameRuningId);
+            const gameConfig = getGameConfigByGameId(gameRuningId);
 
-          try {
-            await exportSavegameToOPFS(activeCi, [gameConfig.dosSaveFilePath, gameConfig.dosSaveFileName].join('/'), gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
-            console.log([gameConfig.dosSaveFilePath, gameConfig.dosSaveFileName].join('/'), gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
+            try {
+              await exportSavegameToOPFS(activeCi, gameConfig.dosSaveFileName, gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
+              console.log(gameConfig.dosSaveFileName, gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
 
-            alert("¡Partida guardada correctamente en OPFS!");
-          } catch (e) {
-            alert("Error al guardar: " + e.message);
-          }
+              alert("¡Partida guardada correctamente en OPFS!");
+            } catch (e) {
+              alert("Error al guardar: " + e.message);
+            }
+          });
         });
       }
 
       function displayTopBarMenu() {
-        document.getElementById("exit-game-button").style.display = isGameRuning ? '': 'none';
-        document.getElementById("save-game-button").style.display = isGameRuning ? '': 'none';
+        document.querySelectorAll(".exit-game-button").forEach((btn) => {
+          btn.style.display = isGameRuning ? '' : 'none';
+        });
+        document.querySelectorAll(".save-game-button").forEach((btn) => {
+          btn.style.display = isGameRuning ? '' : 'none';
+        });
       }
 
       async function startGame({container, url, jsDosConfig}) {
