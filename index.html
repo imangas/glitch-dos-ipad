@@ -359,12 +359,12 @@
         <div
           class="bg-primary/20 px-2 py-0.5 text-[10px] text-primary font-bold uppercase"
         >
-          <strike id="version_info"></strike>
+          <span id="version_info"/>
         </div>
       </div>
     </footer>
     <script>
-      const VERSION = '0.0.5';
+      const VERSION = '0.0.6';
       const GAMES_CONFIG_FILENAME = "games-config.json";
       const GAME_PLAYER = undefined;
       const GAME_GRID = document.getElementById("game_grid");
@@ -572,7 +572,7 @@
           const objectUrl = URL.createObjectURL(bundleBlob);
 
           // 5. Iniciar js-dos v8 pasándole la URL del Blob generado
-          await startGame({container, url: objectUrl});
+          await startGame({container, url: objectUrl, jsDosConfig: getGameConfigByGameId(gameRuningId)?.jsDos});
         
       }
 
@@ -588,6 +588,12 @@
         window.gamesData[gameRuningId].dosSaveFileName = configForm.dosSaveFileName.value;
         window.gamesData[gameRuningId].opfsSaveFilePath = configForm.opfsSaveFilePath.value;
         window.gamesData[gameRuningId].dosboxConfig = configForm.dosboxConfig.value;
+
+        window.gamesData[gameRuningId].jsDos = {
+          ...window.gamesData[gameRuningId].jsDos,
+          mouseCapture: configForm.mouseCapture.checked,
+        };
+
         saveGamesConfigToOPFS();
         loadList();
       }
@@ -659,6 +665,24 @@
               <label class="block text-[10px] text-secondary font-bold uppercase">opfs Save File Path</label>
               <textarea name="dosboxConfig" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" rows="7">${gameConfig.dosboxConfig}</textarea>
               </div>
+              </div>
+            </div>
+
+            <div class="space-y-6">
+              <div class="flex items-center gap-2 mb-4">
+                <span class="text-tertiary font-bold">04.</span>
+                <h2 class="text-on-surface font-bold uppercase text-sm tracking-widest">Emulator Config</h2>
+                <div class="flex-1 border-t border-outline-variant/30 ml-4"></div>
+              </div>
+              <div class="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  name="mouseCapture"
+                  id="mouseCapture"
+                  class="w-4 h-4 accent-primary bg-surface-container-low border border-outline"
+                  ${gameConfig?.jsDos?.mouseCapture ? "checked" : ""}
+                />
+                <label for="mouseCapture" class="text-[10px] text-secondary font-bold uppercase">Mouse Capture</label>
               </div>
             </div>
           </form>
@@ -904,11 +928,12 @@
         document.getElementById("save-game-button").style.display = isGameRuning ? '': 'none';
       }
 
-      async function startGame({container, url}) {
+      async function startGame({container, url, jsDosConfig}) {
         try{
           window.gamePlayer = Dos(container, {
             url,
             autoStart: true,
+            mouseCapture: jsDosConfig?.mouseCapture || false,
             fsChanges: {
               local: false,
             },
@@ -991,7 +1016,7 @@
         await loadList();
 
         const versionInfo = document.getElementById('version_info');
-        versionInfo.innerHTML = VERSION;
+        versionInfo.innerHTML = `v${VERSION}`;
 
         const installBtn = document.getElementById("install-game-button");
         const inputFile = document.getElementById("rom-input");

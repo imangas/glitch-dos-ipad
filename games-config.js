@@ -6,8 +6,10 @@ window.gamesData = {
     "dosSaveFileName": "CITY.M2",
     "opfsFolder": "sc2k",
     "dosboxConfig":
-      "[autoexec]\nmount c .\nc:"
-
+      "[autoexec]\nmount c .\nc:",
+    "jsDos": {
+      "mouseCapture": false
+    }
   },
   "sc2000": {
     "name": "SimCity 2000",
@@ -48,6 +50,9 @@ window.gamesData = {
     "dosSaveFileName": "SAVEGAME.001",
     "opfsFolder": "atlantis",
     "dosboxConfig":
-      "[autoexec]\nmount c .\nc:\nCD ATLANTIS/ATLANTIS\nATLANTIS.EXE"
+      "[autoexec]\nmount c .\nc:\nCD ATLANTIS/ATLANTIS\nATLANTIS.EXE",
+    "jsDos": {
+      "mouseCapture": true
+    }
   },
 };
