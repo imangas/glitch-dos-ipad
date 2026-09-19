@@ -338,7 +338,7 @@
       <aside
         id="detail-panel"
         class="fixed left-0 right-0 top-12 bottom-14 md:left-auto md:right-0 md:bottom-8 md:w-80 z-[60] md:z-40 bg-[#1b1b1b] border-l border-outline-variant/50 p-6 flex flex-col overflow-y-auto"
-      ></aside>>
+      ></aside>
     </div>
     <!-- Footer / Status Bar -->
     <footer
@@ -382,7 +382,7 @@
       </button>
     </div>
     <script>
-      const VERSION = '0.0.6';
+      const VERSION = '0.0.7';
       const GAMES_CONFIG_FILENAME = "games-config.json";
       const GAME_PLAYER = undefined;
       const GAME_GRID = document.getElementById("game_grid");
@@ -551,7 +551,7 @@
         gameButtonSetup.className =
           "flex-1 bg-surface-container-high text-secondary py-2 text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30 hover:bg-surface-variant";
         gameButtonSetup.textContent = "⚙ SETUP";
-        gameButtonSetup.onclick = () => setupGame(name);
+        gameButtonSetup.onclick = () => setupGame(name, handle);
         gameExtraButtons.append(gameButtonSetup);
 
         const gameButtonDelete = document.createElement("button");
@@ -561,83 +561,20 @@
         gameButtonDelete.onclick = () => deleteGame(name);
         gameExtraButtons.append(gameButtonDelete);
 
+        const mobileSetupContainer = document.createElement("div");
+        mobileSetupContainer.id = "mobile-setup-container";
+        mobileSetupContainer.className = "md:hidden mt-6";
+        gameDetails.append(mobileSetupContainer);
 
         detailPanel.append(gameDetails);
         document.getElementById("close-detail-panel-button").onclick = closeDetailPanel;
       }
 
-      async function loadGameBlob(fileHandle, gameConfig){
-        const container = document.getElementById("game-panel");
-        const dashboardPanel = document.getElementById("dashboard-panel");
-        const detailPanel = document.getElementById("detail-panel");
-        const configGame = getGameConfigByGameId(gameRuningId).dosboxConfig;
+      function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "grid grid-cols-1 gap-10";
 
-        container.style.display = "block";
-        dashboardPanel.style.display = "none";
-        detailPanel.style.display = 'none';
-
-        container.innerHTML = "";
-
-          // 1. Obtener el archivo desde OPFS
-          const file = await fileHandle.getFile();
-          const arrayBuffer = await file.arrayBuffer();
-
-          // 2. Leer el ZIP original con JSZip en memoria RAM
-          const zip = await JSZip.loadAsync(arrayBuffer);
-
-          // Inyectar el archivo de configuración
-          zip.file(".jsdos/dosbox.conf", configGame);
-
-          const opfsSaveFilePath = gameConfig.opfsSaveFilePath;
-          const saveFileName = gameConfig.dosSaveFileName;
-          const saveBytes = await getSavegameFromOPFS(opfsSaveFilePath, saveFileName);
-
-          if (saveBytes) {
-            // Meter/Sobrescribir la partida guardada directamente DENTRO del ZIP en memoria
-            zip.file([gameConfig.dosSaveFilePath, gameConfig.dosSaveFileName].join('/'), saveBytes);
-            console.log(`[OPFS] Archivo ${saveFileName} metido en el bundle ZIP antes del arranque.`);
-          }
-
-
-          // 4. Generar un nuevo Blob ZIP en memoria
-          const bundleBlob = await zip.generateAsync({
-            type: "blob",
-            mimeType: "application/zip",
-          });
-          const objectUrl = URL.createObjectURL(bundleBlob);
-
-          // 5. Iniciar js-dos v8 pasándole la URL del Blob generado
-          await startGame({container, url: objectUrl, jsDosConfig: getGameConfigByGameId(gameRuningId)?.jsDos});
-        
-      }
-
-      function cancelSetupGame() {
-        loadList();
-      }
-
-      function saveConfigGame() {
-        const configForm = document.gameConfig;
-        window.gamesData[gameRuningId].name = configForm.name.value;
-        window.gamesData[gameRuningId].wallscroll = configForm.wallscroll.value;
-        window.gamesData[gameRuningId].dosSaveFilePath = configForm.dosSaveFilePath.value;
-        window.gamesData[gameRuningId].dosSaveFileName = configForm.dosSaveFileName.value;
-        window.gamesData[gameRuningId].opfsSaveFilePath = configForm.opfsSaveFilePath.value;
-        window.gamesData[gameRuningId].dosboxConfig = configForm.dosboxConfig.value;
-
-        window.gamesData[gameRuningId].jsDos = {
-          ...window.gamesData[gameRuningId].jsDos,
-          mouseCapture: configForm.mouseCapture.checked,
-        };
-
-        saveGamesConfigToOPFS();
-        loadList();
-      }
-
-      async function setupGame(name) {
-        const gameConfig = getGameConfigByGameId(gameRuningId);
-        
-        GAME_GRID.innerHTML = `<div class="grid grid-cols-1 gap-10 md:col-span-2 lg:col-span-3">
-          <form name="gameConfig" action="void 0">
+        wrapper.innerHTML = `<form name="gameConfig" action="void 0">
             <!-- Section: Game Info -->
             <div class="space-y-6">
               <div class="flex items-center gap-2 mb-4">
@@ -656,6 +593,7 @@
               </div>
               </div>
             </div>
+
             <!-- Section: Identity -->
             <div class="space-y-6">
               <div class="flex items-center gap-2 mb-4">
@@ -722,23 +660,116 @@
             </div>
           </form>
 
-            <!-- Final Actions -->
-            <div class="pt-12 pb-24 flex gap-4" id="setup_action_buttons"></div>
-          </div>`;
+          <!-- Final Actions -->
+          <div class="pt-6 pb-6 md:pb-24 flex gap-4" id="setup_action_buttons"></div>
+        `;
 
-          const setupActionButtons = document.getElementById('setup_action_buttons');
+        const setupActionButtons = wrapper.querySelector("#setup_action_buttons");
 
-          const saveConfigActionCancelButton = document.createElement("button");
-          saveConfigActionCancelButton.className = "bg-[#57d9d9] text-[#003737] px-10 py-4 font-black uppercase text-sm hover:bg-[#003737] hover:text-[#57d9d9] transition-colors duration-75 flex items-center gap-3";
-          saveConfigActionCancelButton.innerHTML = '<span class="material-symbols-outlined text-sm">save</span>SAVE CHANGES';
-          setupActionButtons.append(saveConfigActionCancelButton);
-          setupActionButtons.onclick = saveConfigGame;
+        const saveConfigActionButton = document.createElement("button");
+        saveConfigActionButton.className = "bg-[#57d9d9] text-[#003737] px-10 py-4 font-black uppercase text-sm hover:bg-[#003737] hover:text-[#57d9d9] transition-colors duration-75 flex items-center gap-3";
+        saveConfigActionButton.innerHTML = '<span class="material-symbols-outlined text-sm">save</span>SAVE CHANGES';
+        setupActionButtons.append(saveConfigActionButton);
 
-          const setupActionCancelButton = document.createElement("button");
-          setupActionCancelButton.className = "bg-surface-container-highest text-on-surface border border-outline-variant/30 px-10 py-4 font-bold uppercase text-sm hover:bg-error hover:text-on-error transition-colors duration-75";
-          setupActionCancelButton.innerText = 'CANCEL';
-          setupActionButtons.append(setupActionCancelButton);
-          setupActionCancelButton.onclick = cancelSetupGame;
+        const cancelActionButton = document.createElement("button");
+        cancelActionButton.className = "bg-surface-container-highest text-on-surface border border-outline-variant/30 px-10 py-4 font-bold uppercase text-sm hover:bg-error hover:text-on-error transition-colors duration-75";
+        cancelActionButton.innerText = 'CANCEL';
+        setupActionButtons.append(cancelActionButton);
+
+        saveConfigActionButton.onclick = () => {
+          const configForm = wrapper.querySelector('form[name="gameConfig"]');
+          window.gamesData[gameRuningId].name = configForm.name.value;
+          window.gamesData[gameRuningId].wallscroll = configForm.wallscroll.value;
+          window.gamesData[gameRuningId].dosSaveFilePathValue = configForm.dosSaveFilePath.value;
+          window.gamesData[gameRuningId].dosSaveFileName = configForm.dosSaveFileName.value;
+          window.gamesData[gameRuningId].opfsSaveFilePath = configForm.opfsSaveFilePath.value;
+          window.gamesData[gameRuningId].dosboxConfig = configForm.dosboxConfig.value;
+          window.gamesData[gameRuningId].jsDos = {
+            ...window.gamesData[gameRuningId].jsDos,
+            mouseCapture: configForm.mouseCapture.checked,
+          };
+          saveGamesConfigToOPFS();
+          onSaved();
+        };
+
+        cancelActionButton.onclick = () => onCancelled();
+
+        return wrapper;
+      }
+
+      async function loadGameBlob(fileHandle, gameConfig){
+        const container = document.getElementById("game-panel");
+        const dashboardPanel = document.getElementById("dashboard-panel");
+        const detailPanel = document.getElementById("detail-panel");
+        const configGame = getGameConfigByGameId(gameRuningId).dosboxConfig;
+
+        container.style.display = "block";
+        dashboardPanel.style.display = "none";
+        detailPanel.style.display = 'none';
+
+        container.innerHTML = "";
+
+          // 1. Obtener el archivo desde OPFS
+          const file = await fileHandle.getFile();
+          const arrayBuffer = await file.arrayBuffer();
+
+          // 2. Leer el ZIP original con JSZip en memoria RAM
+          const zip = await JSZip.loadAsync(arrayBuffer);
+
+          // Inyectar el archivo de configuración
+          zip.file(".jsdos/dosbox.conf", configGame);
+
+          const opfsSaveFilePath = gameConfig.opfsSaveFilePath;
+          const saveFileName = gameConfig.dosSaveFileName;
+          const saveBytes = await getSavegameFromOPFS(opfsSaveFilePath, saveFileName);
+
+          if (saveBytes) {
+            // Meter/Sobrescribir la partida guardada directamente DENTRO del ZIP en memoria
+            zip.file([gameConfig.dosSaveFilePath, gameConfig.dosSaveFileName].join('/'), saveBytes);
+            console.log(`[OPFS] Archivo ${saveFileName} metido en el bundle ZIP antes del arranque.`);
+          }
+
+
+          // 4. Generar un nuevo Blob ZIP en memoria
+          const bundleBlob = await zip.generateAsync({
+            type: "blob",
+            mimeType: "application/zip",
+          });
+          const objectUrl = URL.createObjectURL(bundleBlob);
+
+          // 5. Iniciar js-dos v8 pasándole la URL del Blob generado
+          await startGame({container, url: objectUrl, jsDosConfig: getGameConfigByGameId(gameRuningId)?.jsDos});
+        
+      }
+
+      function setupGame(name, handle) {
+        const gameConfig = getGameConfigByGameId(gameRuningId);
+        const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
+        if (isMobile) {
+          const mobileContainer = document.getElementById("mobile-setup-container");
+          if (!mobileContainer) return;
+
+          mobileContainer.innerHTML = "";
+          const formEl = buildGameConfigFormElement(gameConfig, {
+            onSaved: () => {
+              loadList();
+              loadGameDetails(handle, name, gameRuningId);
+            },
+            onCancelled: () => {
+              mobileContainer.innerHTML = "";
+            },
+          });
+          mobileContainer.append(formEl);
+        } else {
+          const gridEl = document.getElementById("game_grid");
+          gridEl.innerHTML = "";
+          const formEl = buildGameConfigFormElement(gameConfig, {
+            onSaved: () => loadList(),
+            onCancelled: () => loadList(),
+          });
+          gridEl.append(formEl);
+        }
       }
 
       async function deleteGame(fileName) {
