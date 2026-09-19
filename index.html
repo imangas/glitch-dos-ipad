@@ -221,14 +221,14 @@
     </header>
     <div
       id="game-panel"
-      class="flex flex-1 pt-12 pb-8 overflow-hidden"
+      class="flex flex-1 min-h-0 pt-12 pb-14 md:pb-8 overflow-hidden"
       style="width: 100vw; height: 60vw; display: none"
     ></div>
     <!-- Main Layout Container -->
-    <div id="dashboard-panel" class="flex flex-1 pt-12 pb-8 overflow-hidden">
+    <div id="dashboard-panel" class="flex flex-1 min-h-0 pt-12 pb-14 md:pb-8 overflow-hidden">
       <!-- SideNavBar -->
       <aside
-        class="fixed left-0 top-12 bottom-8 w-64 z-40 border-r border-[#3c4949]/50 bg-[#1b1b1b] flex flex-col py-6"
+        class="hidden md:flex fixed left-0 top-12 bottom-8 w-64 z-40 border-r border-[#3c4949]/50 bg-[#1b1b1b] flex-col py-6"
       >
         <div class="px-4 mb-6">
           <div
@@ -314,7 +314,7 @@
       </aside>
       <!-- Central Content Canvas -->
       <main
-        class="ml-64 mr-80 flex-1 p-6 overflow-y-auto custom-scrollbar bg-surface-container-lowest"
+        class="ml-0 md:ml-64 mr-0 md:mr-80 flex-1 min-h-0 p-6 overflow-y-auto custom-scrollbar bg-surface-container-lowest"
       >
         <div class="mb-8">
           <p
@@ -333,17 +333,16 @@
           id="game_grid"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         ></div>
-      </div>
       </main>
       <!-- Right Detail Panel -->
       <aside
         id="detail-panel"
-        class="fixed right-0 top-12 bottom-8 w-80 z-40 bg-[#1b1b1b] border-l border-outline-variant/50 p-6 flex flex-col"
-      ></aside>
+        class="fixed left-0 right-0 top-12 bottom-14 md:left-auto md:right-0 md:bottom-8 md:w-80 z-[60] md:z-40 bg-[#1b1b1b] border-l border-outline-variant/50 p-6 flex flex-col overflow-y-auto"
+      ></aside>>
     </div>
     <!-- Footer / Status Bar -->
     <footer
-      class="fixed bottom-0 w-full h-8 bg-[#1b1b1b] border-t border-[#3c4949]/50 flex items-center justify-between px-4 z-50"
+      class="hidden md:flex fixed bottom-0 w-full h-8 bg-[#1b1b1b] border-t border-[#3c4949]/50 items-center justify-between px-4 z-50"
     >
       <div class="flex gap-6 items-center">
         <div class="flex items-center gap-2">
@@ -370,6 +369,18 @@
         </div>
       </div>
     </footer>
+    <div
+      id="install-game-bar-mobile"
+      class="md:hidden fixed bottom-0 w-full h-14 bg-[#1b1b1b] border-t border-[#3c4949]/50 z-50 flex items-center px-4"
+    >
+      <button
+        id="install-game-button-mobile"
+        class="w-full bg-[#2a2a2a] text-[#57d9d9] border border-[#57d9d9]/30 py-3 font-bold text-xs uppercase tracking-widest hover:bg-[#57d9d9] hover:text-[#003737] transition-colors active:scale-95 flex items-center justify-center gap-2"
+      >
+        <span class="material-symbols-outlined text-sm">add</span>
+        INSTALL NEW GAME
+      </button>
+    </div>
     <script>
       const VERSION = '0.0.6';
       const GAMES_CONFIG_FILENAME = "games-config.json";
@@ -460,6 +471,13 @@
         }
       }
 
+      function closeDetailPanel() {
+        const detailPanel = document.getElementById("detail-panel");
+        detailPanel.style.display = "none";
+        detailPanel.innerHTML = "";
+        gameRuningId = null;
+      }
+
       async function loadGameDetails(handle, name, gameId) {
         const detailPanel = document.getElementById("detail-panel");
         detailPanel.style.display = "block";
@@ -471,6 +489,15 @@
         mount c .
         c:
         `;
+
+        const closeButtonRow = document.createElement("div");
+        closeButtonRow.className = "md:hidden flex justify-end mb-4";
+        closeButtonRow.innerHTML = `
+          <button id="close-detail-panel-button" class="text-[#c7c6c6] hover:text-primary p-2 -m-2">
+            <span class="material-symbols-outlined text-xl">close</span>
+          </button>
+        `;
+        detailPanel.append(closeButtonRow);
 
         const gameDetails = document.createElement("div");
         gameDetails.innerHTML = `<div class="mb-6 flex flex-col gap-4">
@@ -536,6 +563,7 @@
 
 
         detailPanel.append(gameDetails);
+        document.getElementById("close-detail-panel-button").onclick = closeDetailPanel;
       }
 
       async function loadGameBlob(fileHandle, gameConfig){
@@ -1031,13 +1059,19 @@
         await initGamesConfig();
         await loadList();
 
+
+        const installBtn = document.getElementById("install-game-button");
+        const installBtnMobile = document.getElementById("install-game-button-mobile");
+        const inputFile = document.getElementById("rom-input");
+
         const versionInfo = document.getElementById('version_info');
         versionInfo.innerHTML = `v${VERSION}`;
 
-        const installBtn = document.getElementById("install-game-button");
-        const inputFile = document.getElementById("rom-input");
-
         installBtn.addEventListener("click", () => {
+          inputFile.click();
+        });
+
+        installBtnMobile.addEventListener("click", () => {
           inputFile.click();
         });
 
