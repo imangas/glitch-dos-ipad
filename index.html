@@ -170,6 +170,11 @@
       class="fixed top-0 w-full z-50 border-b border-[#3c4949]/50 bg-[#131313] shadow-[0_0_15px_rgba(87,217,217,0.05)] flex justify-between items-center px-4 h-12 w-full"
     >
       <div class="flex items-center gap-4">
+        <span
+          id="mobile-menu-button"
+          class="md:hidden material-symbols-outlined text-[#c7c6c6] hover:text-primary cursor-pointer text-base p-2 -m-2"
+          >menu</span
+        >
         <span class="text-lg font-bold text-[#57d9d9] font-['Space_Grotesk']"
           ><strike>C:\SYSTEM\LAUNCHER.EXE</strike></span
         >
@@ -227,8 +232,13 @@
     <!-- Main Layout Container -->
     <div id="dashboard-panel" class="flex flex-1 min-h-0 pt-12 pb-14 md:pb-8 overflow-hidden">
       <!-- SideNavBar -->
+      <div
+        id="mobile-sidebar-overlay"
+        class="hidden fixed inset-0 bg-black/60 z-30"
+      ></div>
       <aside
-        class="hidden md:flex fixed left-0 top-12 bottom-8 w-64 z-40 border-r border-[#3c4949]/50 bg-[#1b1b1b] flex-col py-6"
+        id="sidebar"
+        class="fixed left-0 top-12 bottom-8 w-64 z-40 border-r border-[#3c4949]/50 bg-[#1b1b1b] flex flex-col py-6 -translate-x-full md:translate-x-0 transition-transform duration-200"
       >
         <div class="px-4 mb-6">
           <div
@@ -275,7 +285,7 @@
           </div>
           <div id="opfs-tree" class="space-y-1 text-[10px]"></div>
         </div>
-        <div class="px-4 border-t border-[#3c4949]/30 pt-6">
+        <div class="hidden md:block px-4 border-t border-[#3c4949]/30 pt-6">
           <button
             id="install-game-button"
             class="w-full bg-[#2a2a2a] text-[#57d9d9] border border-[#57d9d9]/30 py-3 font-bold text-xs uppercase tracking-widest hover:bg-[#57d9d9] hover:text-[#003737] transition-colors active:scale-95"
@@ -355,7 +365,7 @@
       </button>
     </div>
     <script>
-      const VERSION = '0.0.7';
+      const VERSION = '0.1.0';
       const GAMES_CONFIG_FILENAME = "games-config.json";
       const GAME_PLAYER = undefined;
       const GAME_GRID = document.getElementById("game_grid");
@@ -1060,6 +1070,30 @@
         }
       }
 
+      function openMobileSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("mobile-sidebar-overlay");
+        sidebar.classList.remove("-translate-x-full");
+        sidebar.classList.add("translate-x-0");
+        overlay.classList.remove("hidden");
+      }
+
+      function closeMobileSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("mobile-sidebar-overlay");
+        sidebar.classList.remove("translate-x-0");
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+      }
+
+      function setupMobileSidebar() {
+        const menuButton = document.getElementById("mobile-menu-button");
+        const overlay = document.getElementById("mobile-sidebar-overlay");
+
+        menuButton.addEventListener("click", openMobileSidebar);
+        overlay.addEventListener("click", closeMobileSidebar);
+      }
+
       async function renderOpfsTree() {
         const treeContainer = document.getElementById("opfs-tree");
         if (!treeContainer) return;
@@ -1175,6 +1209,7 @@
 
         inputFile.addEventListener("change", installGame);
         setupTopBarMenu();
+        setupMobileSidebar();
       }
 
       bootstrap();
