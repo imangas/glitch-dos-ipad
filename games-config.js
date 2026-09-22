@@ -55,4 +55,14 @@ window.gamesData = {
       "mouseCapture": true
     }
   },
+  "samnmax": {
+    "name": "The Incredible Machine",
+    "wallscroll": "",
+    "description": "Sam & Max Hit the Road",
+    "dosSaveFilePath": "",
+    "dosSaveFileName": "",
+    "opfsFolder": "",
+    "dosboxConfig":
+      "[autoexec]\nmount c .\nc:\nCD SAMNMAX\nSAM.EXE"
+  },
 };
