@@ -1,12 +1,12 @@
 // sw.js
-const CACHE_NAME = 'dos-pwa-v2';
+const CACHE_NAME = 'dos-pwa-v3';
 
 // 1. URLs exactas a precargar en la instalación
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  // Librerías JS
+  './js/main.js',
   'https://v8.js-dos.com/latest/js-dos.js',
   'https://v8.js-dos.com/latest/wdosbox.wasm',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',

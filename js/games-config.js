@@ -56,7 +56,7 @@ window.gamesData = {
     }
   },
   "samnmax": {
-    "name": "The Incredible Machine",
+    "name": "Sam & Max Hit the Road",
     "wallscroll": "",
     "description": "Sam & Max Hit the Road",
     "dosSaveFilePath": "",
@@ -64,5 +64,15 @@ window.gamesData = {
     "opfsFolder": "",
     "dosboxConfig":
       "[autoexec]\nmount c .\nc:\nCD SAMNMAX\nSAM.EXE"
+  },
+  "wiwics": {
+    "name": "Where in the World Is Carmen Sandiego?",
+    "wallscroll": "",
+    "description": "Where in the World Is Carmen Sandiego?d",
+    "dosSaveFilePath": "",
+    "dosSaveFileName": "",
+    "opfsFolder": "",
+    "dosboxConfig":
+      "[autoexec]\nmount c .\nc:\nCARMEN.EXE"
   },
 };
