@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'dos-pwa-v3';
+const CACHE_NAME = 'dos-pwa-v4';
 
 // 1. URLs exactas a precargar en la instalación
 const ASSETS_TO_CACHE = [

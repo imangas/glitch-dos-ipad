@@ -1,4 +1,4 @@
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 const GAMES_CONFIG_FILENAME = "games-config.json";
 const GAME_GRID = document.getElementById("game_grid");
 let isGameRuning = false;
@@ -23,6 +23,8 @@ async function saveGamesConfigToOPFS() {
 }
 
 async function initGamesConfig() {
+  window.defaultGamesData = structuredClone(window.gamesData);
+
   try {
     // ¿Existe ya una copia en OPFS?
     const fileHandle = await getGamesConfigFileHandle(false);
@@ -49,6 +51,10 @@ function getGameIdByFilename(filename) {
 
 function getGameConfigByGameId(gameId) {
   return window.gamesData[gameId] || window.gamesData.generic;
+}
+
+function getDefaultGameConfigByGameId(gameId) {
+  return window.defaultGamesData?.[gameId] || window.defaultGamesData?.generic;
 }
 
 async function loadList() {
@@ -293,6 +299,29 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
   cancelActionButton.innerText = "CANCEL";
   setupActionButtons.append(cancelActionButton);
 
+  const resetConfigActionButton = document.createElement("button");
+  resetConfigActionButton.className =
+    "bg-surface-container-highest text-tertiary border border-tertiary/30 px-10 py-4 font-bold uppercase text-sm hover:bg-tertiary hover:text-on-tertiary transition-colors duration-75 flex items-center gap-3";
+  resetConfigActionButton.innerHTML =
+    '<span class="material-symbols-outlined text-sm">restart_alt</span>RESET TO DEFAULTS';
+  setupActionButtons.append(resetConfigActionButton);
+
+  resetConfigActionButton.onclick = () => {
+    if (!confirm("Reset this game's configuration to the repository defaults? Unsaved changes will be lost.")) {
+      return;
+    }
+
+    const defaultConfig = getDefaultGameConfigByGameId(gameRuningId);
+    if (!defaultConfig) {
+      alert(`No default configuration found for this game (${gameRuningId}).`);
+      return;
+    }
+
+    window.gamesData[gameRuningId] = structuredClone(defaultConfig);
+    saveGamesConfigToOPFS();
+    onSaved();
+  };
+
   saveConfigActionButton.onclick = () => {
     const configForm = wrapper.querySelector('form[name="gameConfig"]');
     window.gamesData[gameRuningId].name = configForm.name.value;
@@ -400,14 +429,21 @@ function setupGame(name, handle) {
 }
 
 async function deleteGame(fileName) {
-  if (!confirm(`Are you sure to delete "${fileName}"?`)) return;
+  if (!confirm(`Are you sure to delete "${fileName}"?`))
+    return;
 
   try {
     const root = await navigator.storage.getDirectory();
     await root.removeEntry(fileName);
+
+    const gameId = getGameIdByFilename(fileName);
+    if (gameId !== 'generic' && window.gamesData[gameId]) {
+      delete window.gamesData[gameId];
+      await saveGamesConfigToOPFS();
+    }
   } catch (err) {
-    console.error("Error al borrar el archivo:", err);
-    alert("No se pudo eliminar el juego.");
+    console.error("Error when try to delete game:", err);
+    alert("The games was enable to be deleted.");
   }
   loadList();
 }
