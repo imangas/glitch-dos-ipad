@@ -1,0 +1,23 @@
+/node_module# Dependencias
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores / IDEs
+.vscode/
+.idea/
+*.swp
+
+# Variables de entorno
+.env
+.env.local
+
+# Archivos temporales de release-please (si aplica más adelante)
+.release-please-manifest.json.bak
