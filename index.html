@@ -51,15 +51,13 @@
             console.log('Service Worker activo en scope:', reg.scope);
 
             if (navigator.onLine) {
-              fetch('https://v8.js-dos.com/latest/wdosbox.wasm', { mode: 'cors' }).catch(() => {});
+              fetch('https://v8.js-dos.com/latest/wdosbox.wasm', { mode: 'corsg' }).catch(() => {});
             }
           } catch (err) {
             console.error('Error registrando Service Worker:', err);
           }
         });
       }
-
-      let gameRuningId = null;
 
       tailwind.config = {
         darkMode: "class",

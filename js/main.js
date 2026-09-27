@@ -1,9 +1,9 @@
-const VERSION = "0.2.0";
+const VERSION = "0.3.0";
 const GAMES_CONFIG_FILENAME = "games-config.json";
-const GAME_PLAYER = undefined;
 const GAME_GRID = document.getElementById("game_grid");
 let isGameRuning = false;
 let activeCi = null;
+let gameRuningId = null;
 
 async function getGamesConfigFileHandle(create = false) {
   const root = await navigator.storage.getDirectory();
@@ -102,13 +102,6 @@ async function loadGameDetails(handle, name, gameId) {
   detailPanel.innerHTML = "";
   gameRuningId = gameId;
   const gameConfig = getGameConfigByGameId(gameRuningId);
-
-  const customConf =
-    gameConfig?.dosboxConfig ||
-    `[autoexec]
-        mount c .
-        c:
-        `;
 
   const closeButtonRow = document.createElement("div");
   closeButtonRow.className = "md:hidden flex justify-end mb-4";
@@ -685,6 +678,7 @@ function stopGame() {
   displayTopBarMenu();
 }
 
+// eslint-disable-next-line no-unused-vars
 async function fileExistsInDOS(ci, path) {
   const module =
     typeof ci.getModule === "function" ? ci.getModule() : ci.module;
@@ -709,8 +703,8 @@ async function exportSavegameToOPFS(ci, sourcePath, gameSlug, targetName) {
     let fileBytes;
     try {
       fileBytes = await ci.fsReadFile(sourcePath);
-    } catch (err) {
-      throw new Error`File ${sourcePath} not found.`();
+    } catch {
+      throw new Error(`File ${sourcePath} not found.`);
     }
 
     if (!fileBytes || fileBytes.length === 0) {
