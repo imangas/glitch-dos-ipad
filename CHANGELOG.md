@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.5.0...glitchdos-v0.6.0) (2026-10-06)
+
+
+### Features
+
+* get version from release pleas ([44f7117](https://github.com/imangas/glitch-dos-ipad/commit/44f711784878e6d62fb87d0598d01bc0d8923886))
+
+
+### Bug Fixes
+
+* correct typo in previous commit message (release-please trigger) ([0ee0ddc](https://github.com/imangas/glitch-dos-ipad/commit/0ee0ddc24bc436371dd3577b6394ab567579f089))
+
 ## [0.5.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.4.0...glitchdos-v0.5.0) (2026-10-06)
 
 
