@@ -1,4 +1,4 @@
-const VERSION = "0.4.0"; // x-release-please-version
+const VERSION = "0.6.0"; // x-release-please-version
 const GAMES_CONFIG_FILENAME = "games-config.json";
 const GAME_GRID = document.getElementById("game_grid");
 let isGameRuning = false;
