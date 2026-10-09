@@ -1,4 +1,17 @@
-// sw.js
+// SPDX-License-Identifier: GPL-2.0-or-later
+//
+// GlitchDOS - DOS games launcher for any device
+// Copyright (C) 2026 Nacho Mangas
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
 const CACHE_NAME = "dos-pwa-v0.4.0"; // x-release-please-version
 
 // 1. URLs exactas a precargar en la instalación
