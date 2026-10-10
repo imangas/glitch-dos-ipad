@@ -8,8 +8,9 @@ window.gamesData = {
     "dosboxConfig":
       "[autoexec]\nmount c .\nc:",
     "jsDos": {
-      "mouseCapture": false
-    }
+      "mouseCapture": false,
+      "saveMode": "file"
+    },
   },
   "sc2000": {
     "name": "SimCity 2000",

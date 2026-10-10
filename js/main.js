@@ -14,11 +14,18 @@
 // GNU General Public License for more details.
 
 const VERSION = "0.6.0"; // x-release-please-version
+const SNAPSHOTS = "snapshots";
+const SAVE_MODE_FILE = "file";
+const SAVE_MODE_PERSIST = "persist";
 const GAMES_CONFIG_FILENAME = "games-config.json";
 const GAME_GRID = document.getElementById("game_grid");
 let isGameRuning = false;
 let activeCi = null;
 let gameRuningId = null;
+
+function getSaveMode(gameConfig) {
+  return gameConfig?.jsDos?.saveMode ?? SAVE_MODE_FILE;
+}
 
 async function getGamesConfigFileHandle(create = false) {
   const root = await navigator.storage.getDirectory();
@@ -292,6 +299,24 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
                 />
                 <label for="mouseCapture" class="text-[10px] text-secondary font-bold uppercase">Mouse Capture</label>
               </div>
+
+              <div class="flex items-center gap-4 mt-6">
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    name="saveModePersist"
+                    class="sr-only peer"
+                    ${getSaveMode(gameConfig) === SAVE_MODE_PERSIST ? "checked" : ""}
+                  />
+                  <div class="w-11 h-6 bg-surface-container-high border border-outline rounded-full relative transition-colors peer-checked:bg-primary/30 peer-checked:border-primary after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:w-4 after:h-4 after:rounded-full after:bg-secondary after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-primary"></div>
+                </label>
+                <div>
+                  <p class="text-[10px] text-secondary font-bold uppercase">Save method</p>
+                  <p class="text-[10px] text-secondary-fixed-dim">
+                    OFF: single save file &middot; ON: full emulator image
+                  </p>
+                </div>
+              </div>
             </div>
           </form>
 
@@ -351,6 +376,7 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
     window.gamesData[gameRuningId].jsDos = {
       ...window.gamesData[gameRuningId].jsDos,
       mouseCapture: configForm.mouseCapture.checked,
+      saveMode: configForm.saveModePersist.checked ? SAVE_MODE_PERSIST : SAVE_MODE_FILE,
     };
     saveGamesConfigToOPFS();
     onSaved();
@@ -383,19 +409,22 @@ async function loadGameBlob(fileHandle, gameConfig) {
   // Inyectar el archivo de configuración
   zip.file(".jsdos/dosbox.conf", configGame);
 
-  const opfsSaveFilePath = gameConfig.opfsSaveFilePath;
-  const saveFileName = gameConfig.dosSaveFileName;
-  const saveBytes = await getSavegameFromOPFS(opfsSaveFilePath, saveFileName);
+  const currentConfig = getGameConfigByGameId(gameRuningId);
 
-  if (saveBytes) {
-    // Meter/Sobrescribir la partida guardada directamente DENTRO del ZIP en memoria
-    zip.file(
-      [gameConfig.dosSaveFilePath, gameConfig.dosSaveFileName].join("/"),
-      saveBytes,
-    );
-    console.log(
-      `[OPFS] Archivo ${saveFileName} metido en el bundle ZIP antes del arranque.`,
-    );
+  if (getSaveMode(currentConfig) === SAVE_MODE_PERSIST) {
+    const imageBytes = await getEmuImageFromOPFS(gameRuningId);
+    if (imageBytes) {
+      await applyEmuImageToZip(zip, imageBytes);
+    }
+  } else {
+    const opfsSaveFilePath = currentConfig.opfsSaveFilePath;
+    const saveFileName = currentConfig.dosSaveFileName;
+    const saveBytes = await getSavegameFromOPFS(opfsSaveFilePath, saveFileName);
+
+    if (saveBytes) {
+      zip.file([currentConfig.dosSaveFilePath, currentConfig.dosSaveFileName].join("/"), saveBytes);
+      console.log(`[OPFS] Archivo ${saveFileName} metido en el bundle ZIP antes del arranque.`);
+    }
   }
 
   // 4. Generar un nuevo Blob ZIP en memoria
@@ -452,6 +481,8 @@ async function deleteGame(fileName) {
     await root.removeEntry(fileName);
 
     const gameId = getGameIdByFilename(fileName);
+    await deleteEmuImageFromOPFS(gameId);
+
     if (gameId !== 'generic' && window.gamesData[gameId]) {
       delete window.gamesData[gameId];
       await saveGamesConfigToOPFS();
@@ -504,6 +535,73 @@ async function getSavegameFromOPFS(gameSlug, fileName) {
     }
     return null;
   }
+}
+
+async function getEmuImageFromOPFS(gameId) {
+  try {
+    const root = await navigator.storage.getDirectory();
+    const folder = await root.getDirectoryHandle(SNAPSHOTS);
+    const fileHandle = await folder.getFileHandle(`${gameId}.jsdos`);
+    const file = await fileHandle.getFile();
+    const buffer = await file.arrayBuffer();
+    return buffer.byteLength === 0 ? null : new Uint8Array(buffer);
+  } catch (err) {
+    if (err.name !== "NotFoundError") {
+      console.error("[OPFS] Error reading emulator image:", err);
+    }
+    return null;
+  }
+}
+
+async function exportEmuImageToOPFS(ci, gameId) {
+  if (!ci) {
+    throw new Error("CommandInterface (ci) is not ready yet.");
+  }
+
+  // persist puede devolver null (sin cambios) o un objeto (sockdrive)
+  const changes = await ci.persist(true);
+  if (!(changes instanceof Uint8Array) || changes.length === 0) {
+    throw new Error("The emulator has no changes to save.");
+  }
+
+  const root = await navigator.storage.getDirectory();
+  const folder = await root.getDirectoryHandle(SNAPSHOTS, { create: true });
+  const fileHandle = await folder.getFileHandle(`${gameId}.jsdos`, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(changes);
+  await writable.close();
+  console.log(`[OPFS] Emulator image saved: ${SNAPSHOTS}/${gameId}.jsdos`);
+}
+
+async function deleteEmuImageFromOPFS(gameId) {
+  try {
+    const root = await navigator.storage.getDirectory();
+    const folder = await root.getDirectoryHandle(SNAPSHOTS);
+    await folder.removeEntry(`${gameId}.jsdos`);
+  } catch (err) {
+    if (err.name !== "NotFoundError") {
+      console.error("[OPFS] Error deleting emulator image:", err);
+    }
+  }
+}
+
+// Superpone los archivos de la imagen sobre el zip del juego (en memoria).
+async function applyEmuImageToZip(zip, imageBytes) {
+  const imageZip = await JSZip.loadAsync(imageBytes);
+
+  // DOS no distingue mayúsculas: reutilizamos la ruta ya existente en el zip
+  const existing = new Map();
+  zip.forEach((relativePath) => existing.set(relativePath.toLowerCase(), relativePath));
+
+  const applied = [];
+  for (const [path, entry] of Object.entries(imageZip.files)) {
+    // Nunca pisar la config inyectada (.jsdos/dosbox.conf)
+    if (entry.dir || path.startsWith(".jsdos/")) continue;
+    const targetPath = existing.get(path.toLowerCase()) ?? path;
+    zip.file(targetPath, await entry.async("uint8array"));
+    applied.push(targetPath);
+  }
+  console.log(`[OPFS] Emulator image applied (${applied.length} files):`, applied);
 }
 
 function showNewGameKeyModal(defaultKey) {
@@ -669,17 +767,11 @@ function setupTopBarMenu() {
       const gameConfig = getGameConfigByGameId(gameRuningId);
 
       try {
-        await exportSavegameToOPFS(
-          activeCi,
-          gameConfig.dosSaveFileName,
-          gameConfig.opfsSaveFilePath,
-          gameConfig.dosSaveFileName,
-        );
-        console.log(
-          gameConfig.dosSaveFileName,
-          gameConfig.opfsSaveFilePath,
-          gameConfig.dosSaveFileName,
-        );
+        if (getSaveMode(gameConfig) === SAVE_MODE_PERSIST) {
+          await exportEmuImageToOPFS(activeCi, gameRuningId);
+        } else {
+          await exportSavegameToOPFS(activeCi, gameConfig.dosSaveFileName, gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
+        }
 
         await renderOpfsTree();
         alert("¡Partida guardada correctamente en OPFS!");
