@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.7.0...glitchdos-v0.8.0) (2026-10-10)
+
+
+### Features
+
+* show a list of snapshots (saved games) ([0c8b238](https://github.com/imangas/glitch-dos-ipad/commit/0c8b2387e5865bbcfb703f45ad616b0aaa0b4da1))
+
 ## [0.7.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.6.0...glitchdos-v0.7.0) (2026-10-10)
 
 
