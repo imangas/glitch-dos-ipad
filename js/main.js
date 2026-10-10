@@ -491,6 +491,7 @@ async function deleteGame(fileName) {
     console.error("Error when try to delete game:", err);
     alert("The games was enable to be deleted.");
   }
+  renderOpfsTree();
   loadList();
 }
 
@@ -908,23 +909,28 @@ function setupMobileSidebar() {
   overlay.addEventListener("click", closeMobileSidebar);
 }
 
-async function renderOpfsTree() {
-  const treeContainer = document.getElementById("opfs-tree");
+async function renderOpfsFolderTree(folderName, containerId, emptyMessage) {
+  const treeContainer = document.getElementById(containerId);
   if (!treeContainer) return;
   treeContainer.innerHTML = "";
 
   try {
     const root = await navigator.storage.getDirectory();
-    const savegamesFolder = await root.getDirectoryHandle("savegames");
-    const treeEl = await buildOpfsTreeNode(savegamesFolder);
+    const folderHandle = await root.getDirectoryHandle(folderName);
+    const treeEl = await buildOpfsTreeNode(folderHandle);
     treeContainer.append(treeEl);
   } catch (err) {
     if (err.name === "NotFoundError") {
-      treeContainer.innerHTML = `<p class="text-secondary-fixed-dim px-2 py-1 italic">No savegames yet.</p>`;
+      treeContainer.innerHTML = `<p class="text-secondary-fixed-dim px-2 py-1 italic">${emptyMessage}</p>`;
     } else {
-      console.error("[OPFS] Error building savegames tree:", err);
+      console.error(`[OPFS] Error building ${folderName} tree:`, err);
     }
   }
+}
+
+async function renderOpfsTree() {
+  await renderOpfsFolderTree("savegames", "opfs-tree", "No savegames yet.");
+  await renderOpfsFolderTree(SNAPSHOTS, "snapshots-tree", "No snapshots yet.");
 }
 
 async function buildOpfsTreeNode(dirHandle) {
