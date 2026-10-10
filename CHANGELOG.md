@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.6.0...glitchdos-v0.7.0) (2026-10-10)
+
+
+### Features
+
+* option to store games as snapshots instead of just saved game file ([72118ea](https://github.com/imangas/glitch-dos-ipad/commit/72118ea1d79fb326bf69bd9ce453d3491fb5a64c))
+
 ## [0.6.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.5.0...glitchdos-v0.6.0) (2026-10-06)
 
 
