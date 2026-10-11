@@ -393,7 +393,7 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
   return wrapper;
 }
 
-async function loadGameBlob(fileHandle, gameConfig) {
+async function loadGameBlob(fileHandle) {
   const container = document.getElementById("game-panel");
   const dashboardPanel = document.getElementById("dashboard-panel");
   const detailPanel = document.getElementById("detail-panel");
@@ -711,6 +711,7 @@ async function installGame(event) {
       window.gamesData[key] = {
         ...structuredClone(window.gamesData.generic),
         name: key,
+        opfsSaveFilePath: key,
       };
       await saveGamesConfigToOPFS();
     }
