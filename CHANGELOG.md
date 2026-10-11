@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.8.0...glitchdos-v0.8.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* typo and translations ([f8b6dbe](https://github.com/imangas/glitch-dos-ipad/commit/f8b6dbe85a76954a69393ad007ca9a428a64f9aa))
+
 ## [0.8.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.7.0...glitchdos-v0.8.0) (2026-10-10)
 
 
