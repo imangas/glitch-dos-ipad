@@ -60,10 +60,11 @@ async function initGamesConfig() {
     const file = await fileHandle.getFile();
     const text = await file.text();
     window.gamesData = JSON.parse(text);
+    // Is there already a copy in OPFS?
     console.log("[OPFS] games-config loaded.");
   } catch (err) {
     if (err.name === "NotFoundError") {
-      // No existe: guardamos una copia del que trae games-config.js por defecto
+      // Not found: store a copy of the defaults from games-config.js
       await saveGamesConfigToOPFS();
       console.log(
         "[OPFS] No games-config found. Default copy created.",
@@ -405,14 +406,14 @@ async function loadGameBlob(fileHandle) {
 
   container.innerHTML = "";
 
-  // 1. Obtener el archivo desde OPFS
+  // 1. Read the game file from OPFS
   const file = await fileHandle.getFile();
   const arrayBuffer = await file.arrayBuffer();
 
-  // 2. Leer el ZIP original con JSZip en memoria RAM
+  // 2. Open the original ZIP in memory with JSZip
   const zip = await JSZip.loadAsync(arrayBuffer);
 
-  // Inyectar el archivo de configuración
+  // 3. Inject the dosbox configuration
   zip.file(".jsdos/dosbox.conf", configGame);
 
   const currentConfig = getGameConfigByGameId(gameRuningId);
@@ -433,14 +434,14 @@ async function loadGameBlob(fileHandle) {
     }
   }
 
-  // 4. Generar un nuevo Blob ZIP en memoria
+  // 4. Generate a new ZIP blob in memory
   const bundleBlob = await zip.generateAsync({
     type: "blob",
     mimeType: "application/zip",
   });
   bundleUrl = URL.createObjectURL(bundleBlob);
 
-  // 5. Iniciar js-dos v8 pasándole la URL del Blob generado
+  // 5. Start js-dos v8 with the generated blob URL
   await startGame({
     container,
     url: bundleUrl,
@@ -701,7 +702,7 @@ async function installGame(event) {
       const key = await showNewGameKeyModal(originalGameId);
 
       if (!key) {
-        // Usuario canceló: no se instala el juego
+        // User cancelled: the game is not installed
         event.target.value = "";
         return;
       }
@@ -760,14 +761,8 @@ function setupTopBarMenu() {
   saveGameButtons.forEach((btn) => {
     btn.style.display = "none";
     btn.addEventListener("click", async () => {
-      if (!window?.gamePlayer) return;
-      if (!isGameRuning) return;
-      if (!activeCi) {
-        alert("The game is not ready yet.");
-        return;
-      }
-
-      if (!gameRuningId) {
+      if (!window?.gamePlayer || !isGameRuning) return;
+      if (!activeCi || !gameRuningId) {
         alert("The game is not ready yet.");
         return;
       }
