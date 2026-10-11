@@ -1,6 +1,6 @@
 {
   "name": "glitchdos",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "private": true,
   "description": "DOS games launcher for any device using js-dos and OPFS storage",
   "scripts": {
