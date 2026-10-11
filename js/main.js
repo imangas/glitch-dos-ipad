@@ -24,6 +24,12 @@ let activeCi = null;
 let gameRuningId = null;
 let bundleUrl = null;
 
+const HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+
+function escapeHtml(text) {
+  return String(text ?? "").replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+}
+
 function getSaveMode(gameConfig) {
   return gameConfig?.jsDos?.saveMode ?? SAVE_MODE_FILE;
 }
@@ -99,15 +105,15 @@ async function loadList() {
                     <img
                       class="w-full h-full object-cover grayscale contrast-125 brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-300"
                       data-alt="Retro 90s FPS game screenshot with dark corridors"
-                      src="${gameConfig?.wallscroll ?? "./assets/generic1.png"}"
+                      src="${escapeHtml(gameConfig?.wallscroll || "./assets/generic1.png")}"
                     />
                   <div class="absolute inset-0 bg-primary/10 mix-blend-overlay"></div>
                 </div>
                 <div class="flex justify-between items-start">
                   <div>
-                    <h3 class="text-on-surface font-bold text-sm group-hover:text-primary">${gameConfig.name}
+                    <h3 class="text-on-surface font-bold text-sm group-hover:text-primary">${escapeHtml(gameConfig.name)}
                     </h3>
-                    <p class="text-secondary text-[10px] mt-1 uppercase">${gameConfig?.company || "-"}</p>
+                    <p class="text-secondary text-[10px] mt-1 uppercase">${escapeHtml(gameConfig?.company || "-")}</p>
                   </div>
                   <span class="text-primary font-bold text-[10px] tracking-widest"><strike>[INFO]</strike></span>
                 </div>`;
@@ -164,13 +170,13 @@ async function loadGameDetails(handle, name, gameId) {
             <h2
               class="text-xl font-bold text-primary phosphor-glow tracking-tight uppercase"
             >
-              ${gameConfig.name.toUpperCase()}
+              ${escapeHtml(gameConfig.name)}
             </h2>
           </div>
         </div>
         <div class="recessed-panel bg-surface-container-lowest p-4 mb-6 border-b border-r border-outline-variant/20">
           <p class="text-[10px] leading-relaxed text-secondary-fixed-dim line-clamp-6">
-              ${gameConfig.description}
+              ${escapeHtml(gameConfig.description)}
           </p>
         </div>`;
 
@@ -228,11 +234,11 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div class="space-y-2">
               <label class="block text-[10px] text-secondary font-bold uppercase">Name</label>
-              <input name="name" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.name ?? ""}">
+              <input name="name" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${escapeHtml(gameConfig.name)}">
               </div>
               <div class="space-y-2">
               <label class="block text-[10px] text-secondary font-bold uppercase">Wallscroll (image path/URL)</label>
-              <input name="wallscroll" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.wallscroll ?? ""}">
+              <input name="wallscroll" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${escapeHtml(gameConfig.wallscroll)}">
               </div>
               </div>
             </div>
@@ -247,11 +253,11 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div class="space-y-2">
               <label class="block text-[10px] text-secondary font-bold uppercase">dos Save File Path</label>
-              <input name="dosSaveFilePath" id="dosSaveFilePath" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.dosSaveFilePath}">
+              <input name="dosSaveFilePath" id="dosSaveFilePath" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${escapeHtml(gameConfig.dosSaveFilePath)}">
               </div>
               <div class="space-y-2">
               <label class="block text-[10px] text-secondary font-bold uppercase">dos Save File Name</label>
-              <input name="dosSaveFileName" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.dosSaveFileName}">
+              <input name="dosSaveFileName" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${escapeHtml(gameConfig.dosSaveFileName)}">
               </div>
               </div>
             </div>
@@ -279,7 +285,7 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div class="space-y-2">
               <label class="block text-[10px] text-secondary font-bold uppercase">opfs Save File Path</label>
-              <textarea name="dosboxConfig" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" rows="7">${gameConfig.dosboxConfig}</textarea>
+              <textarea name="dosboxConfig" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" rows="7">${escapeHtml(gameConfig.dosboxConfig)}</textarea>
               </div>
               </div>
             </div>
@@ -952,7 +958,7 @@ async function buildOpfsTreeNode(dirHandle) {
       folderRow.innerHTML = `
               <span class="material-symbols-outlined text-sm folder-toggle-icon">chevron_right</span>
               <span class="material-symbols-outlined text-sm">folder</span>
-              <span class="font-['Space_Grotesk'] font-medium uppercase truncate">${name}</span>
+              <span class="font-['Space_Grotesk'] font-medium uppercase truncate">${escapeHtml(name)}</span>
             `;
 
       const childrenContainer = document.createElement("div");
@@ -985,7 +991,7 @@ async function buildOpfsTreeNode(dirHandle) {
         "flex items-center gap-2 px-2 py-1.5 pl-7 text-secondary-fixed-dim";
       fileRow.innerHTML = `
               <span class="material-symbols-outlined text-sm">description</span>
-              <span class="font-['Space_Grotesk'] truncate">${name}</span>
+              <span class="font-['Space_Grotesk'] truncate">${escapeHtml(name)}</span>
             `;
       list.append(fileRow);
     }
