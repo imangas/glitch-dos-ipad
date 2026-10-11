@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.8.1...glitchdos-v0.8.2) (2026-10-11)
+
+
+### Bug Fixes
+
+* introduce the use of bundleUrl ([f077e7d](https://github.com/imangas/glitch-dos-ipad/commit/f077e7d1ffc9da1449d55accfe008dcb614e6e5b))
+
 ## [0.8.1](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.8.0...glitchdos-v0.8.1) (2026-10-11)
 
 
