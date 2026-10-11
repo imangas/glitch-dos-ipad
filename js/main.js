@@ -22,6 +22,7 @@ const GAME_GRID = document.getElementById("game_grid");
 let isGameRuning = false;
 let activeCi = null;
 let gameRuningId = null;
+let bundleUrl = null;
 
 function getSaveMode(gameConfig) {
   return gameConfig?.jsDos?.saveMode ?? SAVE_MODE_FILE;
@@ -366,8 +367,7 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
     const configForm = wrapper.querySelector('form[name="gameConfig"]');
     window.gamesData[gameRuningId].name = configForm.name.value;
     window.gamesData[gameRuningId].wallscroll = configForm.wallscroll.value;
-    window.gamesData[gameRuningId].dosSaveFilePathValue =
-      configForm.dosSaveFilePath.value;
+    window.gamesData[gameRuningId].dosSaveFilePath = configForm.dosSaveFilePath.value;
     window.gamesData[gameRuningId].dosSaveFileName =
       configForm.dosSaveFileName.value;
     window.gamesData[gameRuningId].opfsSaveFilePath =
@@ -432,12 +432,12 @@ async function loadGameBlob(fileHandle, gameConfig) {
     type: "blob",
     mimeType: "application/zip",
   });
-  const objectUrl = URL.createObjectURL(bundleBlob);
+  bundleUrl = URL.createObjectURL(bundleBlob);
 
   // 5. Iniciar js-dos v8 pasándole la URL del Blob generado
   await startGame({
     container,
-    url: objectUrl,
+    url: bundleUrl,
     jsDosConfig: getGameConfigByGameId(gameRuningId)?.jsDos,
   });
 }
@@ -810,30 +810,25 @@ async function startGame({ container, url, jsDosConfig }) {
   } catch (err) {
     console.error("Failed to start the game in js-dos:", err);
     alert("Could not start the emulator.");
+    return;
   }
-  isGameRuning = true;
 
+  isGameRuning = true;
   displayTopBarMenu();
 }
 
 function stopGame() {
   window.gamePlayer.stop();
-  isGameRuning = false;
-  displayTopBarMenu();
-}
+  window.gamePlayer = null;
+  activeCi = null;
 
-// eslint-disable-next-line no-unused-vars
-async function fileExistsInDOS(ci, path) {
-  const module =
-    typeof ci.getModule === "function" ? ci.getModule() : ci.module;
-
-  if (module && module.FS) {
-    // FS.analyzePath devuelve información sobre el nodo en el VFS
-    const info = module.FS.analyzePath(path);
-    return info.exists && !info.error;
+  if (bundleUrl) {
+    URL.revokeObjectURL(bundleUrl);
+    bundleUrl = null;
   }
 
-  return false;
+  isGameRuning = false;
+  displayTopBarMenu();
 }
 
 async function exportSavegameToOPFS(ci, sourcePath, gameSlug, targetName) {
