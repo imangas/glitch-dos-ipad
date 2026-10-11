@@ -38,9 +38,9 @@ async function saveGamesConfigToOPFS() {
     const writable = await fileHandle.createWritable();
     await writable.write(JSON.stringify(window.gamesData, null, 2));
     await writable.close();
-    console.log("[OPFS] games-config guardado en OPFS.");
+    console.log("[OPFS] games-config saved.");
   } catch (err) {
-    console.error("[OPFS] Error al guardar games-config en OPFS:", err);
+    console.error("[OPFS] Failed to save games-config:", err);
   }
 }
 
@@ -53,16 +53,16 @@ async function initGamesConfig() {
     const file = await fileHandle.getFile();
     const text = await file.text();
     window.gamesData = JSON.parse(text);
-    console.log("[OPFS] games-config cargado desde OPFS.");
+    console.log("[OPFS] games-config loaded.");
   } catch (err) {
     if (err.name === "NotFoundError") {
       // No existe: guardamos una copia del que trae games-config.js por defecto
       await saveGamesConfigToOPFS();
       console.log(
-        "[OPFS] No existía games-config en OPFS. Copia por defecto creada.",
+        "[OPFS] No games-config found. Default copy created.",
       );
     } else {
-      console.error("[OPFS] Error comprobando games-config en OPFS:", err);
+      console.error("[OPFS] Failed to read games-config:", err);
     }
   }
 }
@@ -258,12 +258,12 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
             <div class="space-y-6">
               <div class="flex items-center gap-2 mb-4">
               <span class="text-tertiary font-bold">02.</span>
-              <h2 class="text-on-surface font-bold uppercase text-sm tracking-widest">Console Parameters</h2>
+              <h2 class="text-on-surface font-bold uppercase text-sm tracking-widest">OPFS Parameters</h2>
               <div class="flex-1 border-t border-outline-variant/30 ml-4"></div>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div class="space-y-2">
-              <label class="block text-[10px] text-secondary font-bold uppercase">opfs Save File Path</label>
+              <label class="block text-[10px] text-secondary font-bold uppercase">OPFS Save File Path</label>
               <input name="opfsSaveFilePath" class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors" type="text" value="${gameConfig.opfsSaveFilePath}"/>
               </div>
               </div>
@@ -423,7 +423,7 @@ async function loadGameBlob(fileHandle, gameConfig) {
 
     if (saveBytes) {
       zip.file([currentConfig.dosSaveFilePath, currentConfig.dosSaveFileName].join("/"), saveBytes);
-      console.log(`[OPFS] Archivo ${saveFileName} metido en el bundle ZIP antes del arranque.`);
+      console.log(`[OPFS] Save file injected into the bundle: ${saveFileName}`);
     }
   }
 
@@ -488,8 +488,8 @@ async function deleteGame(fileName) {
       await saveGamesConfigToOPFS();
     }
   } catch (err) {
-    console.error("Error when try to delete game:", err);
-    alert("The games was enable to be deleted.");
+    console.error("Failed to delete game:", err);
+    alert("The game could not be deleted.");
   }
   renderOpfsTree();
   loadList();
@@ -513,24 +513,24 @@ async function getSavegameFromOPFS(gameSlug, fileName) {
 
     if (arrayBuffer.byteLength === 0) {
       console.warn(
-        `[OPFS] El archivo 'savegames/${gameSlug}/${fileName}' existe pero está vacío.`,
+        `[OPFS] Save file is empty: 'savegames/${gameSlug}/${fileName}'`,
       );
       return null;
     }
 
     console.log(
-      `[OPFS] Archivo de guardado recuperado: ${fileName} (${arrayBuffer.byteLength} bytes)`,
+      `[OPFS] Save file loaded: ${fileName} (${arrayBuffer.byteLength} bytes)`,
     );
     return new Uint8Array(arrayBuffer);
   } catch (err) {
     // Es completamente normal que lance 'NotFoundError' la primera vez que se juega
     if (err.name === "NotFoundError") {
       console.log(
-        `[OPFS] No se encontró partida guardada previa para: savegames/${gameSlug}/${fileName}`,
+        `[OPFS] No previous save found: savegames/${gameSlug}/${fileName}`,
       );
     } else {
       console.error(
-        "[OPFS] Error leyendo el archivo desde el almacenamiento privado:",
+        "[OPFS] Failed to read save file:",
         err,
       );
     }
@@ -718,7 +718,7 @@ async function installGame(event) {
     await writable.write(await file.arrayBuffer());
     await writable.close();
 
-    alert(`¡${finalFileName} Installed!`);
+    alert(`${finalFileName} Installed!`);
   } catch (err) {
     console.error("An error occurred while saving the ROM:", err);
     alert("An error occurred while saving the ROM.");
@@ -756,12 +756,12 @@ function setupTopBarMenu() {
       if (!window?.gamePlayer) return;
       if (!isGameRuning) return;
       if (!activeCi) {
-        alert("El juego todavía no está listo.");
+        alert("The game is not ready yet.");
         return;
       }
 
       if (!gameRuningId) {
-        alert("El juego todavía no está listo.");
+        alert("The game is not ready yet.");
         return;
       }
 
@@ -775,9 +775,9 @@ function setupTopBarMenu() {
         }
 
         await renderOpfsTree();
-        alert("¡Partida guardada correctamente en OPFS!");
+        alert("Game saved!");
       } catch (e) {
-        alert("Error al guardar: " + e.message);
+        alert("Failed to save: " + e.message);
       }
     });
   });
@@ -808,8 +808,8 @@ async function startGame({ container, url, jsDosConfig }) {
       },
     });
   } catch (err) {
-    console.error("Error al cargar el juego en js-dos v8:", err);
-    alert("No se pudo iniciar el emulador.");
+    console.error("Failed to start the game in js-dos:", err);
+    alert("Could not start the emulator.");
   }
   isGameRuning = true;
 
@@ -876,11 +876,11 @@ async function exportSavegameToOPFS(ci, sourcePath, gameSlug, targetName) {
     await writable.close();
 
     console.log(
-      `[OPFS] Partida exportada con éxito a: savegames/${gameSlug}/${targetName}`,
+      `[OPFS] Save file exported to: savegames/${gameSlug}/${targetName}`,
     );
     return true;
   } catch (err) {
-    console.error("Error al exportar la partida a OPFS:", err);
+    console.error("[OPFS] Failed to export save file:", err);
     throw err;
   }
 }
