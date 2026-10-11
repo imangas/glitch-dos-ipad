@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.3](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.8.2...glitchdos-v0.8.3) (2026-10-11)
+
+
+### Bug Fixes
+
+* escape html texts ([8cb70ae](https://github.com/imangas/glitch-dos-ipad/commit/8cb70ae5086f3c08f7dd251a46f93510276173f2))
+* opfsSaveFilePath missing in installGame ([49fa18c](https://github.com/imangas/glitch-dos-ipad/commit/49fa18cb7a8af654799e68b9c4745be2ffd07292))
+
 ## [0.8.2](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.8.1...glitchdos-v0.8.2) (2026-10-11)
 
 
