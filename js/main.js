@@ -19,6 +19,8 @@ const SAVE_MODE_FILE = "file";
 const SAVE_MODE_PERSIST = "persist";
 const GAMES_CONFIG_FILENAME = "games-config.json";
 const GAME_GRID = document.getElementById("game_grid");
+const SAVEGAMES = "savegames";
+const SNAPSHOT_EXTENSION = ".jsdos";
 let isGameRuning = false;
 let activeCi = null;
 let gameRuningId = null;
@@ -41,10 +43,8 @@ async function getGamesConfigFileHandle(create = false) {
 
 async function saveGamesConfigToOPFS() {
   try {
-    const fileHandle = await getGamesConfigFileHandle(true);
-    const writable = await fileHandle.createWritable();
-    await writable.write(JSON.stringify(window.gamesData, null, 2));
-    await writable.close();
+    const json = JSON.stringify(window.gamesData, null, 2);
+    await writeOpfsFile([], GAMES_CONFIG_FILENAME, json);
     console.log("[OPFS] games-config saved.");
   } catch (err) {
     console.error("[OPFS] Failed to save games-config:", err);
@@ -54,24 +54,18 @@ async function saveGamesConfigToOPFS() {
 async function initGamesConfig() {
   window.defaultGamesData = structuredClone(window.gamesData);
 
+  const bytes = await readOpfsFile([], GAMES_CONFIG_FILENAME);
+  if (!bytes) {
+    await saveGamesConfigToOPFS();
+    console.log("[OPFS] No games-config found. Default copy created.");
+    return;
+  }
+
   try {
-    // ¿Existe ya una copia en OPFS?
-    const fileHandle = await getGamesConfigFileHandle(false);
-    const file = await fileHandle.getFile();
-    const text = await file.text();
-    window.gamesData = JSON.parse(text);
-    // Is there already a copy in OPFS?
+    window.gamesData = JSON.parse(new TextDecoder().decode(bytes));
     console.log("[OPFS] games-config loaded.");
   } catch (err) {
-    if (err.name === "NotFoundError") {
-      // Not found: store a copy of the defaults from games-config.js
-      await saveGamesConfigToOPFS();
-      console.log(
-        "[OPFS] No games-config found. Default copy created.",
-      );
-    } else {
-      console.error("[OPFS] Failed to read games-config:", err);
-    }
+    console.error("[OPFS] games-config is corrupted, using the defaults:", err);
   }
 }
 
@@ -500,6 +494,52 @@ async function deleteGame(fileName) {
   }
   renderOpfsTree();
   loadList();
+}
+
+async function getOpfsDirectory(path = [], create = false) {
+  let directory = await navigator.storage.getDirectory();
+  for (const name of path) {
+    directory = await directory.getDirectoryHandle(name, { create });
+  }
+  return directory;
+}
+
+async function readOpfsFile(path, fileName) {
+  try {
+    const directory = await getOpfsDirectory(path);
+    const fileHandle = await directory.getFileHandle(fileName);
+    const file = await fileHandle.getFile();
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    return bytes.length > 0 ? bytes : null;
+  } catch (err) {
+    if (err.name !== "NotFoundError") {
+      console.error(`[OPFS] Failed to read ${[...path, fileName].join("/")}:`, err);
+    }
+    return null;
+  }
+}
+
+async function writeOpfsFile(path, fileName, data) {
+  const directory = await getOpfsDirectory(path, true);
+  const fileHandle = await directory.getFileHandle(fileName, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(data);
+  await writable.close();
+}
+
+async function removeOpfsFile(path, fileName) {
+  try {
+    const directory = await getOpfsDirectory(path);
+    await directory.removeEntry(fileName);
+  } catch (err) {
+    if (err.name !== "NotFoundError") {
+      console.error(`[OPFS] Failed to remove ${[...path, fileName].join("/")}:`, err);
+    }
+  }
+}
+
+function getSnapshotFileName(gameId) {
+  return `${gameId}${SNAPSHOT_EXTENSION}`;
 }
 
 async function getSavegameFromOPFS(gameSlug, fileName) {
