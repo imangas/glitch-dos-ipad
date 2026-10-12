@@ -77,7 +77,7 @@ function getDefaultGameConfigByGameId(gameId) {
 }
 
 async function loadList() {
-  const root = await navigator.storage.getDirectory();
+  const root = await getOpfsDirectory();
   GAME_GRID.innerHTML = "";
 
   for await (const [name, handle] of root.entries()) {
@@ -178,7 +178,7 @@ async function loadGameDetails(handle, name, gameId) {
   gameButtonLaunch.className =
     "w-full bg-[#57d9d9] text-[#003737] py-4 text-center font-extrabold text-lg tracking-[0.2em] shadow-[0_0_20px_rgba(87,217,217,0.2)] hover:brightness-110 active:scale-95 transition-all";
   gameButtonLaunch.textContent = "LAUNCH";
-  gameButtonLaunch.onclick = () => loadGameBlob(handle, gameConfig);
+  gameButtonLaunch.onclick = () => loadGameBlob(handle);
   gameButtons.append(gameButtonLaunch);
 
   const gameExtraButtons = document.createElement("div");
@@ -382,60 +382,119 @@ function buildGameConfigFormElement(gameConfig, { onSaved, onCancelled }) {
 
   return wrapper;
 }
+function isSaveFileConfigured(config) {
+  return Boolean(config.dosSaveFileName && config.opfsSaveFilePath);
+}
+
+// Path of the save file inside the DOS filesystem, e.g. "FATE/SAVEGAME.001"
+function getDosSavePath(config) {
+  return [config.dosSaveFilePath, config.dosSaveFileName]
+    .filter((part) => part && part !== ".")
+    .join("/");
+}
+
+// Overlays the snapshot files on top of the game ZIP (in memory).
+async function applySnapshotToZip(zip, snapshotBytes) {
+  const snapshotZip = await JSZip.loadAsync(snapshotBytes);
+
+  // DOS paths are case-insensitive: reuse the path already present in the ZIP
+  const existingPaths = new Map();
+  zip.forEach((relativePath) => existingPaths.set(relativePath.toLowerCase(), relativePath));
+
+  const appliedPaths = [];
+  for (const [path, entry] of Object.entries(snapshotZip.files)) {
+    // Never overwrite the injected config (.jsdos/dosbox.conf)
+    if (entry.dir || path.startsWith(".jsdos/")) continue;
+    const targetPath = existingPaths.get(path.toLowerCase()) ?? path;
+    zip.file(targetPath, await entry.async("uint8array"));
+    appliedPaths.push(targetPath);
+  }
+  console.log(`[OPFS] Snapshot applied (${appliedPaths.length} files):`, appliedPaths);
+}
+
+const SAVE_STRATEGIES = {
+  [SAVE_MODE_FILE]: {
+    async restore(zip, gameId, config) {
+      if (!isSaveFileConfigured(config)) return;
+
+      const path = [SAVEGAMES, config.opfsSaveFilePath];
+      const bytes = await readOpfsFile(path, config.dosSaveFileName);
+      if (!bytes) {
+        console.log(`[OPFS] No previous save found for: ${gameId}`);
+        return;
+      }
+
+      zip.file(getDosSavePath(config), bytes);
+      console.log(`[OPFS] Save file injected into the bundle: ${config.dosSaveFileName}`);
+    },
+
+    async save(ci, gameId, config) {
+      if (!isSaveFileConfigured(config)) {
+        throw new Error("This game has no save file configured. Check its setup.");
+      }
+
+      const bytes = await ci.fsReadFile(getDosSavePath(config));
+      if (!bytes?.length) {
+        throw new Error(`The save file is missing or empty: ${getDosSavePath(config)}`);
+      }
+
+      await writeOpfsFile([SAVEGAMES, config.opfsSaveFilePath], config.dosSaveFileName, bytes);
+      console.log(`[OPFS] Save file exported: ${SAVEGAMES}/${config.opfsSaveFilePath}`);
+    },
+  },
+
+  [SAVE_MODE_PERSIST]: {
+    async restore(zip, gameId) {
+      const bytes = await readOpfsFile([SNAPSHOTS], getSnapshotFileName(gameId));
+      if (bytes) await applySnapshotToZip(zip, bytes);
+    },
+
+    async save(ci, gameId) {
+      // persist() can return null (no changes) or an object (sockdrive)
+      const changes = await ci.persist(true);
+      if (!(changes instanceof Uint8Array) || changes.length === 0) {
+        throw new Error("The emulator has no changes to save.");
+      }
+
+      await writeOpfsFile([SNAPSHOTS], getSnapshotFileName(gameId), changes);
+      console.log(`[OPFS] Snapshot saved: ${SNAPSHOTS}/${getSnapshotFileName(gameId)}`);
+    },
+  },
+};
+
+function getSaveStrategy(config) {
+  return SAVE_STRATEGIES[getSaveMode(config)] ?? SAVE_STRATEGIES[SAVE_MODE_FILE];
+}
 
 async function loadGameBlob(fileHandle) {
   const container = document.getElementById("game-panel");
   const dashboardPanel = document.getElementById("dashboard-panel");
   const detailPanel = document.getElementById("detail-panel");
-  const configGame = getGameConfigByGameId(gameRuningId).dosboxConfig;
+  const config = getGameConfigByGameId(gameRuningId);
 
   container.style.display = "block";
   dashboardPanel.style.display = "none";
   detailPanel.style.display = "none";
-
   container.innerHTML = "";
 
   // 1. Read the game file from OPFS
   const file = await fileHandle.getFile();
-  const arrayBuffer = await file.arrayBuffer();
 
   // 2. Open the original ZIP in memory with JSZip
-  const zip = await JSZip.loadAsync(arrayBuffer);
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
 
-  // 3. Inject the dosbox configuration
-  zip.file(".jsdos/dosbox.conf", configGame);
+  // Inject the dosbox configuration
+  zip.file(".jsdos/dosbox.conf", config.dosboxConfig);
 
-  const currentConfig = getGameConfigByGameId(gameRuningId);
+  // Restore the previous progress according to the game's save mode
+  await getSaveStrategy(config).restore(zip, gameRuningId, config);
 
-  if (getSaveMode(currentConfig) === SAVE_MODE_PERSIST) {
-    const imageBytes = await getEmuImageFromOPFS(gameRuningId);
-    if (imageBytes) {
-      await applyEmuImageToZip(zip, imageBytes);
-    }
-  } else {
-    const opfsSaveFilePath = currentConfig.opfsSaveFilePath;
-    const saveFileName = currentConfig.dosSaveFileName;
-    const saveBytes = await getSavegameFromOPFS(opfsSaveFilePath, saveFileName);
-
-    if (saveBytes) {
-      zip.file([currentConfig.dosSaveFilePath, currentConfig.dosSaveFileName].join("/"), saveBytes);
-      console.log(`[OPFS] Save file injected into the bundle: ${saveFileName}`);
-    }
-  }
-
-  // 4. Generate a new ZIP blob in memory
-  const bundleBlob = await zip.generateAsync({
-    type: "blob",
-    mimeType: "application/zip",
-  });
+  // 3. Generate a new ZIP blob in memory
+  const bundleBlob = await zip.generateAsync({ type: "blob", mimeType: "application/zip" });
   bundleUrl = URL.createObjectURL(bundleBlob);
 
-  // 5. Start js-dos v8 with the generated blob URL
-  await startGame({
-    container,
-    url: bundleUrl,
-    jsDosConfig: getGameConfigByGameId(gameRuningId)?.jsDos,
-  });
+  // 4. Start js-dos v8 with the generated blob URL
+  await startGame({ container, url: bundleUrl, jsDosConfig: config.jsDos });
 }
 
 function setupGame(name, handle) {
@@ -535,104 +594,6 @@ async function removeOpfsFile(path, fileName) {
 
 function getSnapshotFileName(gameId) {
   return `${gameId}${SNAPSHOT_EXTENSION}`;
-}
-
-async function getSavegameFromOPFS(gameSlug, fileName) {
-  try {
-    // 1. Obtener la raíz del OPFS
-    const root = await navigator.storage.getDirectory();
-
-    // 2. Navegar secuencialmente por las carpetas savegames/<gameSlug>
-    const savegamesFolder = await root.getDirectoryHandle(SAVEGAMES);
-    const gameFolder = await savegamesFolder.getDirectoryHandle(gameSlug);
-
-    // 3. Obtener el manipulador del archivo
-    const fileHandle = await gameFolder.getFileHandle(fileName);
-
-    // 4. Leer el archivo y convertirlo a Uint8Array
-    const file = await fileHandle.getFile();
-    const arrayBuffer = await file.arrayBuffer();
-
-    if (arrayBuffer.byteLength === 0) {
-      console.warn(
-        `[OPFS] Save file is empty: 'savegames/${gameSlug}/${fileName}'`,
-      );
-      return null;
-    }
-
-    console.log(
-      `[OPFS] Save file loaded: ${fileName} (${arrayBuffer.byteLength} bytes)`,
-    );
-    return new Uint8Array(arrayBuffer);
-  } catch (err) {
-    // Es completamente normal que lance 'NotFoundError' la primera vez que se juega
-    if (err.name === "NotFoundError") {
-      console.log(
-        `[OPFS] No previous save found: savegames/${gameSlug}/${fileName}`,
-      );
-    } else {
-      console.error(
-        "[OPFS] Failed to read save file:",
-        err,
-      );
-    }
-    return null;
-  }
-}
-
-async function getEmuImageFromOPFS(gameId) {
-  try {
-    const root = await navigator.storage.getDirectory();
-    const folder = await root.getDirectoryHandle(SNAPSHOTS);
-    const fileHandle = await folder.getFileHandle(`${gameId}.jsdos`);
-    const file = await fileHandle.getFile();
-    const buffer = await file.arrayBuffer();
-    return buffer.byteLength === 0 ? null : new Uint8Array(buffer);
-  } catch (err) {
-    if (err.name !== "NotFoundError") {
-      console.error("[OPFS] Error reading emulator image:", err);
-    }
-    return null;
-  }
-}
-
-async function exportEmuImageToOPFS(ci, gameId) {
-  if (!ci) {
-    throw new Error("CommandInterface (ci) is not ready yet.");
-  }
-
-  // persist puede devolver null (sin cambios) o un objeto (sockdrive)
-  const changes = await ci.persist(true);
-  if (!(changes instanceof Uint8Array) || changes.length === 0) {
-    throw new Error("The emulator has no changes to save.");
-  }
-
-  const root = await navigator.storage.getDirectory();
-  const folder = await root.getDirectoryHandle(SNAPSHOTS, { create: true });
-  const fileHandle = await folder.getFileHandle(`${gameId}.jsdos`, { create: true });
-  const writable = await fileHandle.createWritable();
-  await writable.write(changes);
-  await writable.close();
-  console.log(`[OPFS] Emulator image saved: ${SNAPSHOTS}/${gameId}.jsdos`);
-}
-
-// Superpone los archivos de la imagen sobre el zip del juego (en memoria).
-async function applyEmuImageToZip(zip, imageBytes) {
-  const imageZip = await JSZip.loadAsync(imageBytes);
-
-  // DOS no distingue mayúsculas: reutilizamos la ruta ya existente en el zip
-  const existing = new Map();
-  zip.forEach((relativePath) => existing.set(relativePath.toLowerCase(), relativePath));
-
-  const applied = [];
-  for (const [path, entry] of Object.entries(imageZip.files)) {
-    // Nunca pisar la config inyectada (.jsdos/dosbox.conf)
-    if (entry.dir || path.startsWith(".jsdos/")) continue;
-    const targetPath = existing.get(path.toLowerCase()) ?? path;
-    zip.file(targetPath, await entry.async("uint8array"));
-    applied.push(targetPath);
-  }
-  console.log(`[OPFS] Emulator image applied (${applied.length} files):`, applied);
 }
 
 function showNewGameKeyModal(defaultKey) {
@@ -786,14 +747,9 @@ function setupTopBarMenu() {
       const gameConfig = getGameConfigByGameId(gameRuningId);
 
       try {
-        if (getSaveMode(gameConfig) === SAVE_MODE_PERSIST) {
-          await exportEmuImageToOPFS(activeCi, gameRuningId);
-        } else {
-          await exportSavegameToOPFS(activeCi, gameConfig.dosSaveFileName, gameConfig.opfsSaveFilePath, gameConfig.dosSaveFileName);
-        }
-
+        await getSaveStrategy(gameConfig).save(activeCi, gameRuningId, gameConfig);
         await renderOpfsTree();
-        alert("Game saved!");
+        alert("Game saved.");
       } catch (e) {
         alert("Failed to save: " + e.message);
       }
@@ -847,55 +803,6 @@ function stopGame() {
 
   isGameRuning = false;
   displayTopBarMenu();
-}
-
-async function exportSavegameToOPFS(ci, sourcePath, gameSlug, targetName) {
-  if (!ci) {
-    throw new Error("CommandInterface (ci) is not ready yet.");
-  }
-
-  try {
-    // 1. Leer los bytes desde js-dos 8 usando la API basada en Promesas
-    // ci.fsReadFile devuelve una Promise<Uint8Array>
-    let fileBytes;
-    try {
-      fileBytes = await ci.fsReadFile(sourcePath);
-    } catch {
-      throw new Error(`File ${sourcePath} not found.`);
-    }
-
-    if (!fileBytes || fileBytes.length === 0) {
-      throw new Error(`File ${sourcePath} not exists or is empty.`);
-    }
-
-    // 2. Obtener la carpeta raíz de OPFS
-    const root = await navigator.storage.getDirectory();
-
-    // 3. Crear la estructura de carpetas: savegames -> <gameSlug>
-    const savegamesFolder = await root.getDirectoryHandle(SAVEGAMES, {
-      create: true,
-    });
-    const gameFolder = await savegamesFolder.getDirectoryHandle(gameSlug, {
-      create: true,
-    });
-
-    // 4. Crear el archivo en OPFS y escribir el Uint8Array directamente
-    const fileHandle = await gameFolder.getFileHandle(targetName, {
-      create: true,
-    });
-    const writable = await fileHandle.createWritable();
-
-    await writable.write(fileBytes);
-    await writable.close();
-
-    console.log(
-      `[OPFS] Save file exported to: savegames/${gameSlug}/${targetName}`,
-    );
-    return true;
-  } catch (err) {
-    console.error("[OPFS] Failed to export save file:", err);
-    throw err;
-  }
 }
 
 function openMobileSidebar() {
