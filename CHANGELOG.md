@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.8.4...glitchdos-v0.9.0) (2026-10-12)
+
+
+### Features
+
+* add save strategies ([6645a04](https://github.com/imangas/glitch-dos-ipad/commit/6645a04428d005bae0fb550c01fd52e4b2be1dfd))
+
 ## [0.8.4](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.8.3...glitchdos-v0.8.4) (2026-10-11)
 
 
