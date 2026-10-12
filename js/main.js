@@ -36,11 +36,6 @@ function getSaveMode(gameConfig) {
   return gameConfig?.jsDos?.saveMode ?? SAVE_MODE_FILE;
 }
 
-async function getGamesConfigFileHandle(create = false) {
-  const root = await navigator.storage.getDirectory();
-  return root.getFileHandle(GAMES_CONFIG_FILENAME, { create });
-}
-
 async function saveGamesConfigToOPFS() {
   try {
     const json = JSON.stringify(window.gamesData, null, 2);
@@ -482,7 +477,7 @@ async function deleteGame(fileName) {
     await root.removeEntry(fileName);
 
     const gameId = getGameIdByFilename(fileName);
-    await deleteEmuImageFromOPFS(gameId);
+    await removeOpfsFile([SNAPSHOTS], getSnapshotFileName(gameId));
 
     if (gameId !== 'generic' && window.gamesData[gameId]) {
       delete window.gamesData[gameId];
@@ -548,7 +543,7 @@ async function getSavegameFromOPFS(gameSlug, fileName) {
     const root = await navigator.storage.getDirectory();
 
     // 2. Navegar secuencialmente por las carpetas savegames/<gameSlug>
-    const savegamesFolder = await root.getDirectoryHandle("savegames");
+    const savegamesFolder = await root.getDirectoryHandle(SAVEGAMES);
     const gameFolder = await savegamesFolder.getDirectoryHandle(gameSlug);
 
     // 3. Obtener el manipulador del archivo
@@ -619,18 +614,6 @@ async function exportEmuImageToOPFS(ci, gameId) {
   await writable.write(changes);
   await writable.close();
   console.log(`[OPFS] Emulator image saved: ${SNAPSHOTS}/${gameId}.jsdos`);
-}
-
-async function deleteEmuImageFromOPFS(gameId) {
-  try {
-    const root = await navigator.storage.getDirectory();
-    const folder = await root.getDirectoryHandle(SNAPSHOTS);
-    await folder.removeEntry(`${gameId}.jsdos`);
-  } catch (err) {
-    if (err.name !== "NotFoundError") {
-      console.error("[OPFS] Error deleting emulator image:", err);
-    }
-  }
 }
 
 // Superpone los archivos de la imagen sobre el zip del juego (en memoria).
@@ -757,14 +740,7 @@ async function installGame(event) {
       await saveGamesConfigToOPFS();
     }
 
-    const root = await navigator.storage.getDirectory();
-    const fileHandle = await root.getFileHandle(finalFileName, {
-      create: true,
-    });
-    const writable = await fileHandle.createWritable();
-
-    await writable.write(await file.arrayBuffer());
-    await writable.close();
+    await writeOpfsFile([], finalFileName, await file.arrayBuffer());
 
     alert(`${finalFileName} Installed!`);
   } catch (err) {
@@ -896,7 +872,7 @@ async function exportSavegameToOPFS(ci, sourcePath, gameSlug, targetName) {
     const root = await navigator.storage.getDirectory();
 
     // 3. Crear la estructura de carpetas: savegames -> <gameSlug>
-    const savegamesFolder = await root.getDirectoryHandle("savegames", {
+    const savegamesFolder = await root.getDirectoryHandle(SAVEGAMES, {
       create: true,
     });
     const gameFolder = await savegamesFolder.getDirectoryHandle(gameSlug, {
@@ -952,8 +928,7 @@ async function renderOpfsFolderTree(folderName, containerId, emptyMessage) {
   treeContainer.innerHTML = "";
 
   try {
-    const root = await navigator.storage.getDirectory();
-    const folderHandle = await root.getDirectoryHandle(folderName);
+    const folderHandle = await getOpfsDirectory([folderName]);
     const treeEl = await buildOpfsTreeNode(folderHandle);
     treeContainer.append(treeEl);
   } catch (err) {
@@ -966,7 +941,7 @@ async function renderOpfsFolderTree(folderName, containerId, emptyMessage) {
 }
 
 async function renderOpfsTree() {
-  await renderOpfsFolderTree("savegames", "opfs-tree", "No savegames yet.");
+  await renderOpfsFolderTree(SAVEGAMES, "opfs-tree", "No savegames yet.");
   await renderOpfsFolderTree(SNAPSHOTS, "snapshots-tree", "No snapshots yet.");
 }
 
