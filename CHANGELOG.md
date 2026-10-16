@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.9.0...glitchdos-v0.10.0) (2026-10-16)
+
+
+### Features
+
+* **sidebar:** add file deletion with confirmation and file sizes to the tree ([5dbeb72](https://github.com/imangas/glitch-dos-ipad/commit/5dbeb72319acce3af8842b2c6eec0047b3a1b7ce))
+
 ## [0.9.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.8.4...glitchdos-v0.9.0) (2026-10-12)
 
 
