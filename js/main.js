@@ -21,6 +21,7 @@ const GAMES_CONFIG_FILENAME = "games-config.json";
 const GAME_GRID = document.getElementById("game_grid");
 const SAVEGAMES = "savegames";
 const SNAPSHOT_EXTENSION = ".jsdos";
+const SIZE_UNITS = ["b", "kb", "mb", "gb"];
 let isGameRuning = false;
 let activeCi = null;
 let gameRuningId = null;
@@ -30,6 +31,19 @@ const HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'
 
 function escapeHtml(text) {
   return String(text ?? "").replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+}
+
+function formatFileSize(bytes) {
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < SIZE_UNITS.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+
+  // One decimal at most, without trailing zeros: 20kb, 1.5mb
+  return `${Number(value.toFixed(1))}${SIZE_UNITS[unitIndex]}`;
 }
 
 function getSaveMode(gameConfig) {
@@ -550,6 +564,27 @@ async function deleteGame(fileName) {
   loadList();
 }
 
+async function deleteSavedFile(path, fileName) {
+  const fullPath = [...path, fileName].join("/");
+
+  const confirmed = await showConfirmModal({
+    title: "Delete file",
+    message: `"${fullPath}" will be permanently deleted. This cannot be undone.`,
+    confirmLabel: "DELETE",
+  });
+  if (!confirmed) return;
+
+  const removed = await removeOpfsFile(path, fileName);
+  if (!removed) {
+    alert("The file could not be deleted.");
+    return;
+  }
+
+  console.log(`[OPFS] File deleted: ${fullPath}`);
+  await removeOpfsDirectoryIfEmpty(path)
+  await renderOpfsTree();
+}
+
 async function getOpfsDirectory(path = [], create = false) {
   let directory = await navigator.storage.getDirectory();
   for (const name of path) {
@@ -585,9 +620,29 @@ async function removeOpfsFile(path, fileName) {
   try {
     const directory = await getOpfsDirectory(path);
     await directory.removeEntry(fileName);
+    return true;
+  } catch (err) {
+    if (err.name === "NotFoundError") return true; // already gone
+    console.error(`[OPFS] Failed to remove ${[...path, fileName].join("/")}:`, err);
+    return false;
+  }
+}
+
+async function removeOpfsDirectoryIfEmpty(path) {
+  // Keep the top-level folders (savegames, snapshots)
+  if (path.length <= 1) return;
+
+  try {
+    const directory = await getOpfsDirectory(path);
+    const entries = await readSortedEntries(directory);
+    if (entries.length > 0) return;
+
+    const parent = await getOpfsDirectory(path.slice(0, -1));
+    await parent.removeEntry(path.at(-1));
+    console.log(`[OPFS] Empty folder deleted: ${path.join("/")}`);
   } catch (err) {
     if (err.name !== "NotFoundError") {
-      console.error(`[OPFS] Failed to remove ${[...path, fileName].join("/")}:`, err);
+      console.error(`[OPFS] Failed to clean up folder ${path.join("/")}:`, err);
     }
   }
 }
@@ -671,6 +726,51 @@ function showNewGameKeyModal(defaultKey) {
     };
 
     cancelBtn.onclick = () => cleanup(null);
+  });
+}
+
+function showConfirmModal({ title, message, confirmLabel = "CONFIRM" }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4";
+
+    overlay.innerHTML = `
+      <div class="bg-surface-container-low border border-error/40 shadow-[0_0_30px_rgba(255,180,171,0.15)] w-full max-w-md p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="material-symbols-outlined text-error text-sm">warning</span>
+          <h2 id="confirm-modal-title" class="text-error font-bold uppercase text-sm tracking-widest"></h2>
+        </div>
+        <p id="confirm-modal-message" class="text-[10px] text-secondary-fixed-dim mb-6 leading-relaxed break-all"></p>
+        <div class="flex gap-3">
+          <button id="confirm-modal-confirm" class="flex-1 bg-error text-on-error py-3 font-black uppercase text-xs tracking-widest hover:brightness-110 active:scale-95 transition-all"></button>
+          <button id="confirm-modal-cancel" class="flex-1 bg-surface-container-highest text-on-surface border border-outline-variant/30 py-3 font-bold uppercase text-xs hover:bg-surface-variant transition-colors">CANCEL</button>
+        </div>
+      </div>
+    `;
+
+    // textContent (not innerHTML): the message may contain file names
+    overlay.querySelector("#confirm-modal-title").textContent = title;
+    overlay.querySelector("#confirm-modal-message").textContent = message;
+    const confirmButton = overlay.querySelector("#confirm-modal-confirm");
+    const cancelButton = overlay.querySelector("#confirm-modal-cancel");
+    confirmButton.textContent = confirmLabel;
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") close(false);
+    };
+
+    const close = (result) => {
+      document.removeEventListener("keydown", onKeyDown);
+      overlay.remove();
+      resolve(result);
+    };
+
+    confirmButton.onclick = () => close(true);
+    cancelButton.onclick = () => close(false);
+    document.addEventListener("keydown", onKeyDown);
+
+    document.body.append(overlay);
+    cancelButton.focus();
   });
 }
 
@@ -836,7 +936,7 @@ async function renderOpfsFolderTree(folderName, containerId, emptyMessage) {
 
   try {
     const folderHandle = await getOpfsDirectory([folderName]);
-    const treeEl = await buildOpfsTreeNode(folderHandle);
+    const treeEl = await buildOpfsTreeNode(folderHandle, [folderName]);
     treeContainer.append(treeEl);
   } catch (err) {
     if (err.name === "NotFoundError") {
@@ -852,76 +952,88 @@ async function renderOpfsTree() {
   await renderOpfsFolderTree(SNAPSHOTS, "snapshots-tree", "No snapshots yet.");
 }
 
-async function buildOpfsTreeNode(dirHandle) {
+async function readSortedEntries(directoryHandle) {
+  const entries = [];
+  for await (const entry of directoryHandle.entries()) {
+    entries.push(entry);
+  }
+  return entries.sort(([nameA, handleA], [nameB, handleB]) => {
+    if (handleA.kind !== handleB.kind) return handleA.kind === "directory" ? -1 : 1;
+    return nameA.localeCompare(nameB);
+  });
+}
+
+function buildFolderNode(name, handle, path) {
+  const wrapper = document.createElement("div");
+
+  const row = document.createElement("div");
+  row.className =
+    "flex items-center gap-2 px-2 py-1.5 text-[#c7c6c6] hover:text-[#57d9d9] hover:bg-[#2a2a2a] cursor-pointer transition-none";
+  row.innerHTML = `
+    <span class="material-symbols-outlined text-sm folder-toggle-icon">chevron_right</span>
+    <span class="material-symbols-outlined text-sm">folder</span>
+    <span class="font-['Space_Grotesk'] font-medium uppercase truncate">${escapeHtml(name)}</span>
+  `;
+
+  const children = document.createElement("div");
+  children.className = "hidden pl-5";
+
+  let loaded = false;
+  row.onclick = async () => {
+    const icon = row.querySelector(".folder-toggle-icon");
+    const willOpen = children.classList.contains("hidden");
+
+    if (willOpen && !loaded) {
+      children.append(await buildOpfsTreeNode(handle, [...path, name]));
+      loaded = true;
+    }
+    children.classList.toggle("hidden", !willOpen);
+    icon.textContent = willOpen ? "expand_more" : "chevron_right";
+  };
+
+  wrapper.append(row, children);
+  return wrapper;
+}
+
+async function buildFileNode(name, handle, path) {
+  const { size } = await handle.getFile();
+
+  const row = document.createElement("div");
+  row.className =
+    "flex items-center gap-2 px-2 py-1.5 pl-7 text-secondary-fixed-dim hover:bg-[#2a2a2a]";
+  row.innerHTML = `
+    <span class="material-symbols-outlined text-sm">description</span>
+    <span class="font-['Space_Grotesk'] truncate">${escapeHtml(name)}</span>
+    <span class="shrink-0 opacity-70">(${formatFileSize(size)})</span>
+    <button class="ml-auto material-symbols-outlined text-sm text-[#c7c6c6] hover:text-error p-2 -m-2" title="Delete file">delete</button>
+  `;
+
+  row.querySelector("button").onclick = () => deleteSavedFile(path, name);
+  return row;
+}
+
+function buildEmptyNode() {
+  const row = document.createElement("div");
+  row.className = "px-2 py-1 text-secondary-fixed-dim italic";
+  row.textContent = "(empty)";
+  return row;
+}
+
+async function buildOpfsTreeNode(directoryHandle, path) {
   const list = document.createElement("div");
   list.className = "space-y-1";
 
-  const entries = [];
-  for await (const [name, handle] of dirHandle.entries()) {
-    entries.push([name, handle]);
-  }
+  const entries = await readSortedEntries(directoryHandle);
+  const nodes = await Promise.all(
+    entries.map(([name, handle]) =>
+      handle.kind === "directory"
+        ? buildFolderNode(name, handle, path)
+        : buildFileNode(name, handle, path),
+    ),
+  );
+  list.append(...nodes);
 
-  entries.sort((a, b) => {
-    if (a[1].kind !== b[1].kind) return a[1].kind === "directory" ? -1 : 1;
-    return a[0].localeCompare(b[0]);
-  });
-
-  for (const [name, handle] of entries) {
-    if (handle.kind === "directory") {
-      const folderWrapper = document.createElement("div");
-
-      const folderRow = document.createElement("div");
-      folderRow.className =
-        "flex items-center gap-2 px-2 py-1.5 text-[#c7c6c6] hover:text-[#57d9d9] hover:bg-[#2a2a2a] cursor-pointer transition-none";
-      folderRow.innerHTML = `
-              <span class="material-symbols-outlined text-sm folder-toggle-icon">chevron_right</span>
-              <span class="material-symbols-outlined text-sm">folder</span>
-              <span class="font-['Space_Grotesk'] font-medium uppercase truncate">${escapeHtml(name)}</span>
-            `;
-
-      const childrenContainer = document.createElement("div");
-      childrenContainer.className = "hidden pl-5";
-
-      let loaded = false;
-      folderRow.onclick = async () => {
-        const isHidden = childrenContainer.classList.contains("hidden");
-        const icon = folderRow.querySelector(".folder-toggle-icon");
-
-        if (isHidden) {
-          if (!loaded) {
-            const childTree = await buildOpfsTreeNode(handle);
-            childrenContainer.append(childTree);
-            loaded = true;
-          }
-          childrenContainer.classList.remove("hidden");
-          icon.textContent = "expand_more";
-        } else {
-          childrenContainer.classList.add("hidden");
-          icon.textContent = "chevron_right";
-        }
-      };
-
-      folderWrapper.append(folderRow, childrenContainer);
-      list.append(folderWrapper);
-    } else {
-      const fileRow = document.createElement("div");
-      fileRow.className =
-        "flex items-center gap-2 px-2 py-1.5 pl-7 text-secondary-fixed-dim";
-      fileRow.innerHTML = `
-              <span class="material-symbols-outlined text-sm">description</span>
-              <span class="font-['Space_Grotesk'] truncate">${escapeHtml(name)}</span>
-            `;
-      list.append(fileRow);
-    }
-  }
-
-  if (entries.length === 0) {
-    const emptyRow = document.createElement("div");
-    emptyRow.className = "px-2 py-1 text-secondary-fixed-dim italic";
-    emptyRow.textContent = "(empty)";
-    list.append(emptyRow);
-  }
-
+  if (entries.length === 0) list.append(buildEmptyNode());
   return list;
 }
 
