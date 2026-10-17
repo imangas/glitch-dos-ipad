@@ -60,7 +60,6 @@ export default [
       ecmaVersion: 2022,
       globals: {
         ...globals.browser,
-        tailwind: "readonly",
       },
     },
     rules: {

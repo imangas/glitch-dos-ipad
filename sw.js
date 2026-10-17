@@ -20,11 +20,10 @@ const ASSETS_TO_CACHE = [
   './index.html',
   './manifest.json',
   './js/main.js',
+  './css/styles.css',
   'https://v8.js-dos.com/latest/js-dos.js',
   'https://v8.js-dos.com/latest/wdosbox.wasm',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
-  // Tailwind CDN (incluyendo los plugins de la URL)
-  'https://cdn.tailwindcss.com?plugins=forms,container-queries',
   // CSS de Google Fonts
   'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap',
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap',
