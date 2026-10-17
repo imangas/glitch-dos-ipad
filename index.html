@@ -9,10 +9,7 @@
 
     <!-- Indicar a iOS que se comporte como una Web App -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="GlitchDOS" />
 
     <!-- Icono para la pantalla de inicio -->
@@ -24,9 +21,9 @@
     <!-- js-dos v8 style & script -->
     <link rel="stylesheet" href="https://v8.js-dos.com/latest/js-dos.css" />
     <script src="https://v8.js-dos.com/latest/js-dos.js"></script>
-  
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <!-- Google Fonts -->
     <link
@@ -44,17 +41,17 @@
     <script src="./js/games-config.js"></script>
 
     <script id="tailwind-config">
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', async () => {
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", async () => {
           try {
-            const reg = await navigator.serviceWorker.register('./sw.js');
-            console.log('Service Worker activo en scope:', reg.scope);
+            const reg = await navigator.serviceWorker.register("./sw.js");
+            console.log("Service Worker activo en scope:", reg.scope);
 
             if (navigator.onLine) {
-              fetch('https://v8.js-dos.com/latest/wdosbox.wasm', { mode: 'corsg' }).catch(() => {});
+              fetch("https://v8.js-dos.com/latest/wdosbox.wasm", { mode: "corsg" }).catch(() => {});
             }
           } catch (err) {
-            console.error('Error registrando Service Worker:', err);
+            console.error("Error registrando Service Worker:", err);
           }
         });
       }
@@ -136,11 +133,7 @@
           "opsz" 24;
       }
       .ascii-border-b {
-        background-image: linear-gradient(
-          to right,
-          #3c4949 50%,
-          transparent 50%
-        );
+        background-image: linear-gradient(to right, #3c4949 50%, transparent 50%);
         background-size: 8px 1px;
         background-repeat: repeat-x;
         background-position: bottom;
@@ -230,10 +223,7 @@
     <!-- Main Layout Container -->
     <div id="dashboard-panel" class="flex flex-1 min-h-0 pt-12 pb-14 md:pb-8 overflow-hidden">
       <!-- SideNavBar -->
-      <div
-        id="mobile-sidebar-overlay"
-        class="hidden fixed inset-0 bg-black/60 z-30"
-      ></div>
+      <div id="mobile-sidebar-overlay" class="hidden fixed inset-0 bg-black/60 z-30"></div>
       <aside
         id="sidebar"
         class="fixed left-0 top-12 bottom-8 w-64 z-40 border-r border-[#3c4949]/50 bg-[#1b1b1b] flex flex-col py-6 -translate-x-full md:translate-x-0 transition-transform duration-200"
@@ -308,9 +298,7 @@
         class="ml-0 md:ml-64 mr-0 md:mr-80 flex-1 min-h-0 p-6 overflow-y-auto custom-scrollbar bg-surface-container-lowest"
       >
         <div class="mb-8">
-          <p
-            class="text-secondary-fixed-dim font-label text-xs tracking-tighter mb-1"
-          >
+          <p class="text-secondary-fixed-dim font-label text-xs tracking-tighter mb-1">
             C:\GAMES\ROOT\ &gt; 10-24-1994
           </p>
           <h1
@@ -320,10 +308,7 @@
           </h1>
         </div>
         <!-- Game Grid -->
-        <div
-          id="game_grid"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        ></div>
+        <div id="game_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </main>
       <!-- Right Detail Panel -->
       <aside
@@ -341,7 +326,7 @@
           <span class="text-[10px] text-primary font-bold"
             ><strike>XXX KB / XXX KB FREE</strike></span
           >
-        </div></strike>
+        </div>
         <div class="h-3 w-[1px] bg-outline-variant"></div>
         <div class="flex items-center gap-2">
           <span class="text-[10px] text-secondary"><strike>EXTENDED_MEM:</strike></span>
@@ -353,10 +338,8 @@
           <span class="material-symbols-outlined text-[12px]"><strike>schedule</strike></span>
           <span class="font-bold"><strike>21:34:58</strike></span>
         </div>
-        <div
-          class="bg-primary/20 px-2 py-0.5 text-[10px] text-primary font-bold uppercase"
-        >
-          <span id="version_info"/>
+        <div class="bg-primary/20 px-2 py-0.5 text-[10px] text-primary font-bold uppercase">
+          <span id="version_info"></span>
         </div>
       </div>
     </footer>
