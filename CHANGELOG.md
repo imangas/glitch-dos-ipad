@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.11.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.10.0...glitchdos-v0.11.0) (2026-10-17)
+
+
+### Features
+
+* add tailwind config and scripts to compile the stylesheet ([3223b25](https://github.com/imangas/glitch-dos-ipad/commit/3223b251a2849a738ca385550cdd7a7bedc969c2))
+
+
+### Bug Fixes
+
+* **html:** close the version span and remove a stray closing tag ([3dbb7bc](https://github.com/imangas/glitch-dos-ipad/commit/3dbb7bc624232e48f52a4f2ec46c21219c2e94ca))
+
+
+### Performance Improvements
+
+* serve a precompiled tailwind stylesheet instead of the cdn ([e89ce9a](https://github.com/imangas/glitch-dos-ipad/commit/e89ce9a922b707565a5a624dea4bac12c242f8af))
+
 ## [0.10.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.9.0...glitchdos-v0.10.0) (2026-10-16)
 
 
