@@ -64,12 +64,12 @@ GlitchDOS needs a modern browser with support for the Origin Private File System
 
 ## Development
 
-There is no build step: the site is plain HTML and ES modules served as static files.
-
 ```bash
 git clone https://github.com/imangas/glitch-dos-ipad.git
 cd glitch-dos-ipad
 npm install
+npm run build:css   # or npm run watch:css while developing
+python3 -m http.server 8000
 ```
 
 Serve the folder with any static server. A service worker requires `localhost` or HTTPS:

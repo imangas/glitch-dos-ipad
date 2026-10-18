@@ -1,8 +1,11 @@
 # local
-dist/
 design/
 /node_module# Dependencias
 node_modules/
+
+# code to ignore
+dist/
+css/styles.css
 
 # Logs
 npm-debug.log*
