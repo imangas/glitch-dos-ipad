@@ -1,3 +1,6 @@
+# local
+dist/
+design/
 /node_module# Dependencias
 node_modules/
 

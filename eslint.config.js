@@ -7,7 +7,16 @@ export default [
   js.configs.recommended,
 
   {
-    ignores: ["node_modules/**"],
+    ignores: ["index-orig.html", "node_modules/**", "dist/**"],
+  },
+
+  {
+    files: ["scripts/**/*.js"],
+    languageOptions: {
+      sourceType: "module",
+      ecmaVersion: 2022,
+      globals: { ...globals.node },
+    },
   },
 
   // js/main.js: se carga como <script type="module">
