@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.11.0...glitchdos-v0.11.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* **sidebar:** stop the delete button hit area from overflowing the tree ([fe1cdda](https://github.com/imangas/glitch-dos-ipad/commit/fe1cdda85e58b7c509e1e60559411e317fa4e5e3))
+
 ## [0.11.0](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.10.0...glitchdos-v0.11.0) (2026-10-17)
 
 
