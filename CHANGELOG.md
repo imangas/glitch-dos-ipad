@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.2](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.11.1...glitchdos-v0.11.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* rename to GlitchLock-DOS in docs and title ([a3dd224](https://github.com/imangas/glitch-dos-ipad/commit/a3dd224391638195f0ccd1e0d58e350305953aeb))
+
 ## [0.11.1](https://github.com/imangas/glitch-dos-ipad/compare/glitchdos-v0.11.0...glitchdos-v0.11.1) (2026-10-19)
 
 
