@@ -1000,12 +1000,12 @@ async function buildFileNode(name, handle, path) {
 
   const row = document.createElement("div");
   row.className =
-    "flex items-center gap-2 px-2 py-1.5 pl-7 text-secondary-fixed-dim hover:bg-[#2a2a2a]";
+    "flex items-center gap-2 pl-7 pr-1 text-secondary-fixed-dim hover:bg-[#2a2a2a]";
   row.innerHTML = `
     <span class="material-symbols-outlined text-sm">description</span>
     <span class="font-['Space_Grotesk'] truncate">${escapeHtml(name)}</span>
     <span class="shrink-0 opacity-70">(${formatFileSize(size)})</span>
-    <button class="ml-auto material-symbols-outlined text-sm text-[#c7c6c6] hover:text-error p-2 -m-2" title="Delete file">delete</button>
+    <button class="ml-auto material-symbols-outlined text-sm text-[#c7c6c6] hover:text-error p-1.5" title="Delete file">delete</button>
   `;
 
   row.querySelector("button").onclick = () => deleteSavedFile(path, name);
