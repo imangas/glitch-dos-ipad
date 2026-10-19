@@ -1,6 +1,6 @@
 {
-  "name": "GlitchDOS-iPad",
-  "short_name": "GlitchDOS",
+  "name": "GlitchLock-DOS",
+  "short_name": "GlitchLockDOS",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",

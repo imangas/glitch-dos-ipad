@@ -1,8 +1,8 @@
 {
-  "name": "glitchdos",
+  "name": "glitchlock-dos",
   "version": "0.11.1",
   "private": true,
-  "description": "DOS games launcher for any device using js-dos and OPFS storage",
+  "description": "DOS games launcher for any device.",
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
