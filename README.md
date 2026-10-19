@@ -1,10 +1,10 @@
-# GlitchDOS
+# GlitchLock-DOS
 
 A DOS games launcher that runs entirely in your browser, designed to work on any device, including iPad and phones. Install your own games as `.zip` bundles, launch them with [js-dos](https://js-dos.com), and keep your games, configuration and save files stored locally on your device.
 
 **Live demo:** https://imangas.github.io/glitch-dos-ipad/
 
-> GlitchDOS does not include or distribute any games. You are responsible for providing games you legally own or that are freely distributable.
+> GlitchLock-DOS does not include or distribute any games. You are responsible for providing games you legally own or that are freely distributable.
 
 ## Features
 
@@ -60,7 +60,7 @@ The `generic` entry is the fallback used for games without a specific entry and 
 
 ## Browser support
 
-GlitchDOS needs a modern browser with support for the Origin Private File System, including writable file handles. Recent versions of Chromium-based browsers, Firefox and Safari (including iPadOS) are the target. Offline use additionally requires service worker support.
+GlitchLock-DOS needs a modern browser with support for the Origin Private File System, including writable file handles. Recent versions of Chromium-based browsers, Firefox and Safari (including iPadOS) are the target. Offline use additionally requires service worker support.
 
 ## Development
 
@@ -111,10 +111,10 @@ If you add files that must be available offline, list them in `ASSETS_TO_CACHE` 
 
 ## Credits
 
-GlitchDOS would not exist without the work of the people behind these projects:
+GlitchLock-DOS would not exist without the work of the people behind these projects:
 
 - **[DOSBox](https://www.dosbox.com/)** — the DOS emulator that made it possible to keep classic DOS games alive. Thanks to the DOSBox team and all of its contributors.
-- **[js-dos](https://js-dos.com)** — created by Alexander Guryanov ([caiiiycuk](https://github.com/caiiiycuk)), which brings DOSBox to the browser through WebAssembly. GlitchDOS uses js-dos v8 to run every game. Source code: https://github.com/caiiiycuk/js-dos
+- **[js-dos](https://js-dos.com)** — created by Alexander Guryanov ([caiiiycuk](https://github.com/caiiiycuk)), which brings DOSBox to the browser through WebAssembly. GlitchLock-DOS uses js-dos v8 to run every game. Source code: https://github.com/caiiiycuk/js-dos
 - **[JSZip](https://stuk.github.io/jszip/)** — used to open game bundles and inject configuration and save files before launch.
 - **[Tailwind CSS](https://tailwindcss.com/)**, **[Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk)** and **[Material Symbols](https://fonts.google.com/icons)** — styling, typography and icons.
 
@@ -122,6 +122,6 @@ DOS and every game that runs on it belong to their respective authors and publis
 
 ## License
 
-GlitchDOS is free software, released under the [GNU General Public License v2.0 or later](LICENSE) (GPL-2.0-or-later).
+GlitchLock-DOS is free software, released under the [GNU General Public License v2.0 or later](LICENSE) (GPL-2.0-or-later).
 
 DOSBox, js-dos and the other dependencies listed in the credits are distributed under their own licenses; please refer to their repositories for the terms that apply to them.

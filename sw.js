@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
-// GlitchDOS - DOS games launcher for any device
+// GlitchLock-DOS - games launcher for any device
 // Copyright (C) 2026 Nacho Mangas
 //
 // This program is free software; you can redistribute it and/or modify
