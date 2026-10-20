@@ -1,10 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "last-release-sha": "7d59b97626625e07d3da79fbee174c06b1a9243e",
   "packages": {
     ".": {
-      "component": "glitchdos",
       "release-type": "node",
       "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false,
       "bump-minor-pre-major": false,
       "bump-patch-for-minor-pre-major": false,
       "draft": false,
