@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/imangas/glitch-dos-ipad.git"
+    "url": "git+https://github.com/imangas/glitchlock-dos.git"
   },
   "engines": {
     "node": ">=22"
@@ -29,9 +29,9 @@
   "author": "Nacho Mangas <ignaciomangas@gmail.com>",
   "license": "GPL-2.0-or-later",
   "bugs": {
-    "url": "https://github.com/imangas/glitch-dos-ipad/issues"
+    "url": "https://github.com/imangas/glitchlock-dos/issues"
   },
-  "homepage": "https://imangas.github.io/glitch-dos-ipad/",
+  "homepage": "https://imangas.github.io/glitchlock-dos/",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/container-queries": "^0.1.1",

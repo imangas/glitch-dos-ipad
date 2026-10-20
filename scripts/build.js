@@ -13,7 +13,7 @@ const JS_FILES = ["js/main.js", "js/games-config.js", "sw.js"];
 const STATIC_PATHS = ["manifest.json", "icon-192.png", "assets", "css/styles.css"];
 
 const LICENSE_BANNER =
-  "/*! SPDX-License-Identifier: GPL-2.0-or-later | Source: https://github.com/imangas/glitch-dos-ipad */";
+  "/*! SPDX-License-Identifier: GPL-2.0-or-later | Source: https://github.com/imangas/glitchlock-dos */";
 
 const HTML_OPTIONS = {
   collapseWhitespace: true,
