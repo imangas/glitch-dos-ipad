@@ -22,6 +22,9 @@ const GAME_GRID = document.getElementById("game_grid");
 const SAVEGAMES = "savegames";
 const SNAPSHOT_EXTENSION = ".jsdos";
 const SIZE_UNITS = ["b", "kb", "mb", "gb"];
+const MAX_SEARCH_RESULTS = 5;
+const GAME_KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
+const GAME_KEY_INVALID_CHARS = /[^a-zA-Z0-9_-]/g;
 let isGameRuning = false;
 let activeCi = null;
 let gameRuningId = null;
@@ -48,6 +51,37 @@ function formatFileSize(bytes) {
 
 function getSaveMode(gameConfig) {
   return gameConfig?.jsDos?.saveMode ?? SAVE_MODE_FILE;
+}
+
+// Games that can be reused: the saved ones plus the defaults from games-config.js
+// (the saved copy wins when a key exists in both).
+function getKnownGames() {
+  const known = { ...window.defaultGamesData, ...window.gamesData };
+  return Object.entries(known)
+    .filter(([key]) => key !== "generic")
+    .map(([key, config]) => ({ key, name: config.name || key }));
+}
+
+function searchGames(games, query) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return [];
+
+  return games
+    .filter(
+      ({ key, name }) => key.toLowerCase().includes(needle) || name.toLowerCase().includes(needle),
+    )
+    .slice(0, MAX_SEARCH_RESULTS);
+}
+
+function describeKey(games, key) {
+  const match = games.find((game) => game.key === key);
+  if (match) {
+    return { isExisting: true, message: `Existing configuration will be used: ${match.name}` };
+  }
+  return {
+    isExisting: false,
+    message: "A new entry will be created from the generic configuration.",
+  };
 }
 
 async function saveGamesConfigToOPFS() {
@@ -651,81 +685,141 @@ function getSnapshotFileName(gameId) {
   return `${gameId}${SNAPSHOT_EXTENSION}`;
 }
 
-function showNewGameKeyModal(defaultKey) {
+function renderSearchResults(listElement, results, onPick) {
+  const items = results.map((game) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className =
+      "w-full text-left px-3 py-2 text-[10px] bg-surface-container-lowest hover:bg-[#2a2a2a] flex justify-between gap-2";
+
+    const name = document.createElement("span");
+    name.className = "text-primary truncate";
+    name.textContent = game.name;
+
+    const key = document.createElement("span");
+    key.className = "text-secondary-fixed-dim shrink-0";
+    key.textContent = game.key;
+
+    button.append(name, key);
+    button.onclick = () => onPick(game.key);
+
+    const item = document.createElement("li");
+    item.append(button);
+    return item;
+  });
+
+  listElement.replaceChildren(...items);
+}
+
+function buildNewGameModal(defaultKey) {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4";
+
+  overlay.innerHTML = `
+    <div class="bg-surface-container-low border border-primary/40 shadow-[0_0_30px_rgba(87,217,217,0.15)] w-full max-w-md max-h-full overflow-y-auto p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="material-symbols-outlined text-primary text-sm">terminal</span>
+        <h2 class="text-primary font-bold uppercase text-sm tracking-widest phosphor-glow">New Game Detected</h2>
+      </div>
+      <p class="text-[10px] text-secondary-fixed-dim mb-4 leading-relaxed">
+        No configuration was found for this file. Search an existing game to reuse its
+        configuration, or enter a new key to register it.
+        Only letters, numbers, "-" and "_" are allowed in the key.
+      </p>
+      <div class="space-y-2 mb-2">
+        <label class="block text-[10px] text-secondary font-bold uppercase">Search existing games</label>
+        <input
+          id="new-game-search-input"
+          type="text"
+          placeholder="Name or key"
+          autocomplete="off"
+          class="w-full bg-surface-container-lowest border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors"
+        />
+      </div>
+      <ul id="new-game-search-results" class="mb-4 space-y-1"></ul>
+      <div class="space-y-2 mb-2">
+        <label class="block text-[10px] text-secondary font-bold uppercase">Game Key</label>
+        <input
+          id="new-game-key-input"
+          type="text"
+          autocomplete="off"
+          class="w-full bg-surface-container-lowest border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors"
+          value="${escapeHtml(defaultKey)}"
+        />
+      </div>
+      <p id="new-game-key-status" class="text-[10px] min-h-[1rem]"></p>
+      <p id="new-game-key-error" class="text-[10px] text-error mb-4 min-h-[1rem]"></p>
+      <div class="flex gap-3">
+        <button id="new-game-key-confirm" class="flex-1 bg-[#57d9d9] text-[#003737] py-3 font-black uppercase text-xs tracking-widest hover:brightness-110 active:scale-95 transition-all">
+          CONFIRM
+        </button>
+        <button id="new-game-key-cancel" class="flex-1 bg-surface-container-highest text-on-surface border border-outline-variant/30 py-3 font-bold uppercase text-xs hover:bg-error hover:text-on-error transition-colors">
+          CANCEL
+        </button>
+      </div>
+    </div>
+  `;
+
+  return overlay;
+}
+
+// Resolves with the chosen key, or null if the user cancels.
+function showNewGameKeyModal(defaultKey, games) {
   return new Promise((resolve) => {
-    const overlay = document.createElement("div");
-    overlay.className =
-      "fixed inset-0 z-[100] bg-black/70 flex items-center justify-center";
+    const overlay = buildNewGameModal(defaultKey);
+    document.body.append(overlay);
 
-    overlay.innerHTML = `
-            <div class="bg-surface-container-low border border-primary/40 shadow-[0_0_30px_rgba(87,217,217,0.15)] w-full max-w-md p-6">
-              <div class="flex items-center gap-2 mb-4">
-                <span class="material-symbols-outlined text-primary text-sm">terminal</span>
-                <h2 class="text-primary font-bold uppercase text-sm tracking-widest phosphor-glow">New Game Detected</h2>
-              </div>
-              <p class="text-[10px] text-secondary-fixed-dim mb-4 leading-relaxed">
-                No config entry was found for this game. Enter a unique KEY to register it.
-                Only letters, numbers, "-" and "_" are allowed.
-              </p>
-              <div class="space-y-2 mb-2">
-                <label class="block text-[10px] text-secondary font-bold uppercase">Game Key</label>
-                <input
-                  id="new-game-key-input"
-                  type="text"
-                  class="w-full bg-surface-container-lowest border-b-2 border-outline focus:border-primary px-3 py-2 text-primary font-mono outline-none transition-colors"
-                  value="${defaultKey}"
-                />
-              </div>
-              <p id="new-game-key-error" class="text-[10px] text-error mb-4 h-3"></p>
-              <div class="flex gap-3">
-                <button id="new-game-key-confirm" class="flex-1 bg-[#57d9d9] text-[#003737] py-3 font-black uppercase text-xs tracking-widest hover:brightness-110 active:scale-95 transition-all">
-                  CONFIRM
-                </button>
-                <button id="new-game-key-cancel" class="flex-1 bg-surface-container-highest text-on-surface border border-outline-variant/30 py-3 font-bold uppercase text-xs hover:bg-error hover:text-on-error transition-colors">
-                  CANCEL
-                </button>
-              </div>
-            </div>
-          `;
-
-    document.body.appendChild(overlay);
-
-    const input = overlay.querySelector("#new-game-key-input");
+    const searchInput = overlay.querySelector("#new-game-search-input");
+    const resultsList = overlay.querySelector("#new-game-search-results");
+    const keyInput = overlay.querySelector("#new-game-key-input");
+    const statusLabel = overlay.querySelector("#new-game-key-status");
     const errorLabel = overlay.querySelector("#new-game-key-error");
-    const confirmBtn = overlay.querySelector("#new-game-key-confirm");
-    const cancelBtn = overlay.querySelector("#new-game-key-cancel");
 
-    const KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
-
-    input.focus();
-    input.select();
-
-    input.addEventListener("input", () => {
-      // Elimina en vivo cualquier carácter no permitido
-      const sanitized = input.value.replace(/[^a-zA-Z0-9_-]/g, "");
-      if (sanitized !== input.value) {
-        input.value = sanitized;
-      }
-      errorLabel.textContent = "";
-    });
-
-    const cleanup = (result) => {
-      document.body.removeChild(overlay);
+    const close = (result) => {
+      overlay.remove();
       resolve(result);
     };
 
-    confirmBtn.onclick = () => {
-      const key = input.value.trim();
-      if (!key || !KEY_PATTERN.test(key)) {
-        errorLabel.textContent =
-          "Invalid key. Use only letters, numbers, - or _.";
-        input.focus();
-        return;
-      }
-      cleanup(key);
+    const updateStatus = () => {
+      const { isExisting, message } = describeKey(games, keyInput.value);
+      statusLabel.textContent = message;
+      statusLabel.classList.toggle("text-primary", isExisting);
+      statusLabel.classList.toggle("text-secondary-fixed-dim", !isExisting);
     };
 
-    cancelBtn.onclick = () => cleanup(null);
+    const pickGame = (key) => {
+      keyInput.value = key;
+      searchInput.value = "";
+      resultsList.replaceChildren();
+      errorLabel.textContent = "";
+      updateStatus();
+    };
+
+    searchInput.addEventListener("input", () => {
+      renderSearchResults(resultsList, searchGames(games, searchInput.value), pickGame);
+    });
+
+    keyInput.addEventListener("input", () => {
+      // Remove invalid characters as the user types
+      keyInput.value = keyInput.value.replace(GAME_KEY_INVALID_CHARS, "");
+      errorLabel.textContent = "";
+      updateStatus();
+    });
+
+    overlay.querySelector("#new-game-key-confirm").onclick = () => {
+      const key = keyInput.value.trim();
+      if (!GAME_KEY_PATTERN.test(key)) {
+        errorLabel.textContent = "Invalid key. Use only letters, numbers, - or _.";
+        keyInput.focus();
+        return;
+      }
+      close(key);
+    };
+
+    overlay.querySelector("#new-game-key-cancel").onclick = () => close(null);
+
+    updateStatus();
+    searchInput.focus();
   });
 }
 
@@ -774,40 +868,47 @@ function showConfirmModal({ title, message, confirmLabel = "CONFIRM" }) {
   });
 }
 
+// Makes sure there is a configuration entry for the key:
+// - already saved: it is reused as it is
+// - known from games-config.js: its defaults are copied
+// - unknown: a new entry is created from the generic one (filled in by hand in Setup)
+async function registerGame(key) {
+  if (window.gamesData[key]) return;
+
+  const knownConfig = window.defaultGamesData?.[key];
+  window.gamesData[key] = knownConfig
+    ? structuredClone(knownConfig)
+    : { ...structuredClone(window.gamesData.generic), name: key, opfsSaveFilePath: key };
+
+  await saveGamesConfigToOPFS();
+}
+
+// Returns the key the game will be installed with, or null if the user cancelled.
+async function resolveGameKey(file) {
+  const fileKey = getGameIdByFilename(file.name);
+  if (window.gamesData[fileKey]) return fileKey;
+
+  return showNewGameKeyModal(fileKey, getKnownGames());
+}
+
 async function installGame(event) {
   const file = event.target.files[0];
   if (!file) return;
 
   try {
-    const originalGameId = getGameIdByFilename(file.name);
-    let finalFileName = file.name;
-
-    if (!window.gamesData[originalGameId]) {
-      const key = await showNewGameKeyModal(originalGameId);
-
-      if (!key) {
-        // User cancelled: the game is not installed
-        event.target.value = "";
-        return;
-      }
-
-      finalFileName = `${key}.zip`;
-
-      window.gamesData[key] = {
-        ...structuredClone(window.gamesData.generic),
-        name: key,
-        opfsSaveFilePath: key,
-      };
-      await saveGamesConfigToOPFS();
+    const key = await resolveGameKey(file);
+    if (key) {
+      await registerGame(key);
+      await writeOpfsFile([], `${key}.zip`, await file.arrayBuffer());
+      alert(`${key}.zip installed.`);
     }
-
-    await writeOpfsFile([], finalFileName, await file.arrayBuffer());
-
-    alert(`${finalFileName} Installed!`);
   } catch (err) {
     console.error("An error occurred while saving the ROM:", err);
     alert("An error occurred while saving the ROM.");
   }
+
+  // Lets the user pick the same file again
+  event.target.value = "";
   loadList();
 }
 
