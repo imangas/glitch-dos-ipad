@@ -13,7 +13,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
-const VERSION = "0.11.4"; // x-release-please-version
+const VERSION = "0.12.0"; // x-release-please-version
 const SNAPSHOTS = "snapshots";
 const SAVE_MODE_FILE = "file";
 const SAVE_MODE_PERSIST = "persist";
