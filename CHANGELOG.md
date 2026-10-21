@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.4](https://github.com/imangas/glitchlock-dos/compare/v0.11.3...v0.11.4) (2026-10-21)
+
+
+### Bug Fixes
+
+* rename general title ([9716494](https://github.com/imangas/glitchlock-dos/commit/971649400db8a11fccfd608952d5221a04fcf172))
+
 ## [0.11.3](https://github.com/imangas/glitchlock-dos/compare/glitchdos-v0.11.2...glitchdos-v0.11.3) (2026-10-20)
 
 
