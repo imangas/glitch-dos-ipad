@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/imangas/glitchlock-dos/compare/v0.11.4...v0.12.0) (2026-10-21)
+
+
+### Features
+
+* **install:** let the user reuse the configuration of an existing game when installing ([0ba9e2e](https://github.com/imangas/glitchlock-dos/commit/0ba9e2e706e62783f3486a7c38fa7ad934452982))
+
 ## [0.11.4](https://github.com/imangas/glitchlock-dos/compare/v0.11.3...v0.11.4) (2026-10-21)
 
 
