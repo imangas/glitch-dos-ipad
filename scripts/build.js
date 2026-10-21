@@ -9,7 +9,7 @@ import { minify as minifyJs } from "terser";
 const DIST_DIR = "dist";
 const HTML_FILES = ["index.html"];
 const JS_FILES = ["js/main.js", "js/games-config.js", "sw.js"];
-// Copied as they are. Anything not listed here is NOT published: adjust it to your site.
+// Copied as they are. Anything not listed here is NOT published.
 const STATIC_PATHS = ["manifest.json", "icon-192.png", "assets", "css/styles.css"];
 
 const LICENSE_BANNER =
